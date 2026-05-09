@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { nanoid } from 'nanoid';
 import { db } from '$lib/db';
+import { toPlain } from '$lib/helpers/clone';
 import type { Transaction, TxInput } from '$lib/types';
 
 type TxState = {
@@ -19,11 +20,11 @@ function createTransactionStore() {
 	}
 
 	async function record(input: TxInput): Promise<Transaction> {
-		const tx: Transaction = {
+		const tx: Transaction = toPlain({
 			id: nanoid(),
 			timestamp: Date.now(),
 			...input
-		};
+		});
 		await db.transactions.put(tx);
 		update((s) => ({ transactions: [tx, ...s.transactions], loaded: true }));
 		return tx;

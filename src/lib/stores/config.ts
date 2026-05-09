@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { db } from '$lib/db';
+import { toPlain } from '$lib/helpers/clone';
 import type { Config, Voice } from '$lib/types';
 
 type ConfigState = {
@@ -22,12 +23,12 @@ function createConfigStore() {
 	async function save(partial: Omit<Config, 'id' | 'createdAt' | 'updatedAt'>) {
 		const now = Date.now();
 		const existing = await db.config.get('singleton');
-		const next: Config = {
+		const next: Config = toPlain({
 			id: 'singleton',
 			...partial,
 			createdAt: existing?.createdAt ?? now,
 			updatedAt: now
-		};
+		});
 		await db.config.put(next);
 		set({ config: next, loaded: true });
 		return next;
@@ -36,7 +37,7 @@ function createConfigStore() {
 	async function patch(patch: Partial<Omit<Config, 'id' | 'createdAt'>>) {
 		const existing = await db.config.get('singleton');
 		if (!existing) throw new Error('Config not initialized; complete onboarding first.');
-		const next: Config = { ...existing, ...patch, updatedAt: Date.now() };
+		const next: Config = toPlain({ ...existing, ...patch, updatedAt: Date.now() });
 		await db.config.put(next);
 		set({ config: next, loaded: true });
 		return next;

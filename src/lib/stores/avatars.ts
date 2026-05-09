@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { nanoid } from 'nanoid';
 import { db } from '$lib/db';
+import { toPlain } from '$lib/helpers/clone';
 import type { Avatar } from '$lib/types';
 
 type AvatarState = {
@@ -19,7 +20,7 @@ function createAvatarStore() {
 	}
 
 	async function create(input: Omit<Avatar, 'id' | 'createdAt'>) {
-		const next: Avatar = { id: nanoid(), createdAt: Date.now(), ...input };
+		const next: Avatar = toPlain({ id: nanoid(), createdAt: Date.now(), ...input });
 		await db.avatars.put(next);
 		update((s) => ({ avatars: [next, ...s.avatars], loaded: true }));
 		return next;
@@ -32,7 +33,7 @@ function createAvatarStore() {
 	async function patch(id: string, partial: Partial<Avatar>) {
 		const existing = await db.avatars.get(id);
 		if (!existing) throw new Error(`Avatar ${id} not found`);
-		const next = { ...existing, ...partial };
+		const next: Avatar = toPlain({ ...existing, ...partial });
 		await db.avatars.put(next);
 		update((s) => ({
 			avatars: s.avatars.map((a) => (a.id === id ? next : a)),

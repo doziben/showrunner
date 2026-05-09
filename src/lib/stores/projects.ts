@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { nanoid } from 'nanoid';
 import { db } from '$lib/db';
+import { toPlain } from '$lib/helpers/clone';
 import type { LipsyncProvider, Project, Scene } from '$lib/types';
 import { DEFAULT_LIPSYNC_PROVIDER } from '$lib/pipeline/lipsync-models';
 
@@ -26,7 +27,7 @@ function createProjectStore() {
 		lipsyncProvider?: LipsyncProvider;
 	}) {
 		const now = Date.now();
-		const next: Project = {
+		const next: Project = toPlain({
 			id: nanoid(),
 			name: input.name,
 			avatarId: input.avatarId,
@@ -36,7 +37,7 @@ function createProjectStore() {
 			lipsyncProvider: input.lipsyncProvider ?? DEFAULT_LIPSYNC_PROVIDER,
 			createdAt: now,
 			updatedAt: now
-		};
+		});
 		await db.projects.put(next);
 		update((s) => ({ projects: [next, ...s.projects], loaded: true }));
 		return next;
@@ -49,7 +50,7 @@ function createProjectStore() {
 	async function patch(id: string, partial: Partial<Project>) {
 		const existing = await db.projects.get(id);
 		if (!existing) throw new Error(`Project ${id} not found`);
-		const next: Project = { ...existing, ...partial, updatedAt: Date.now() };
+		const next: Project = toPlain({ ...existing, ...partial, updatedAt: Date.now() });
 		await db.projects.put(next);
 		update((s) => ({
 			projects: s.projects.map((p) => (p.id === id ? next : p)),
