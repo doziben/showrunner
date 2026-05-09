@@ -14,31 +14,13 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 
 export async function testAiGateway(key: string): Promise<TestResult> {
 	if (!key) return { ok: false, message: 'Missing key' };
-	try {
-		// Vercel AI Gateway exposes Anthropic-compatible /v1/messages.
-		const res = await withTimeout(
-			fetch('https://ai-gateway.vercel.sh/v1/messages', {
-				method: 'POST',
-				headers: {
-					'content-type': 'application/json',
-					'x-api-key': key,
-					'anthropic-version': '2023-06-01',
-					authorization: `Bearer ${key}`
-				},
-				body: JSON.stringify({
-					model: 'anthropic/claude-haiku-4-5',
-					max_tokens: 4,
-					messages: [{ role: 'user', content: 'ping' }]
-				})
-			}),
-			15000
-		);
-		if (res.ok) return { ok: true, message: 'Gateway reachable' };
-		const text = await res.text();
-		return { ok: false, message: `${res.status} ${text.slice(0, 160)}` };
-	} catch (e) {
-		return { ok: false, message: e instanceof Error ? e.message : String(e) };
+	// Vercel AI Gateway blocks direct browser pings via CORS. We shape-check
+	// the key format here and verify properly through the AI SDK at first run.
+	const trimmed = key.trim();
+	if (/^vck_[A-Za-z0-9_-]{20,}$/.test(trimmed)) {
+		return { ok: true, message: 'Key shape valid (verified on first run)' };
 	}
+	return { ok: false, message: 'AI Gateway keys start with "vck_"' };
 }
 
 export async function testAnthropic(key: string): Promise<TestResult> {
@@ -71,26 +53,33 @@ export async function testAnthropic(key: string): Promise<TestResult> {
 
 export async function testReplicate(key: string): Promise<TestResult> {
 	if (!key) return { ok: false, message: 'Missing key' };
+	// Try the live ping first; fall back to shape-check if CORS blocks it.
 	try {
 		const res = await withTimeout(
 			fetch('https://api.replicate.com/v1/account', {
 				headers: { authorization: `Bearer ${key}` }
 			}),
-			10000
+			8000
 		);
 		if (res.ok) {
-			const data = (await res.json()) as { username?: string; type?: string };
-			return { ok: true, message: data.username ? `Logged in as ${data.username}` : 'Reachable' };
+			const data = (await res.json()) as { username?: string };
+			return {
+				ok: true,
+				message: data.username ? `Logged in as ${data.username}` : 'Reachable'
+			};
 		}
-		const text = await res.text();
-		return { ok: false, message: `${res.status} ${text.slice(0, 160)}` };
-	} catch (e) {
-		const msg = e instanceof Error ? e.message : String(e);
-		const hint = msg.toLowerCase().includes('cors')
-			? 'CORS blocked by Replicate. The browser cannot ping their account endpoint directly.'
-			: msg;
-		return { ok: false, message: hint };
+		if (res.status === 401 || res.status === 403) {
+			return { ok: false, message: 'Replicate rejected the token (401/403)' };
+		}
+		// Non-auth error — fall through to shape-check.
+	} catch {
+		// Likely CORS / network. Fall through to shape-check.
 	}
+	const trimmed = key.trim();
+	if (/^r8_[A-Za-z0-9]{30,}$/.test(trimmed)) {
+		return { ok: true, message: 'Key shape valid (verified on first run)' };
+	}
+	return { ok: false, message: 'Replicate tokens start with "r8_"' };
 }
 
 export async function testElevenLabs(key: string): Promise<TestResult> {

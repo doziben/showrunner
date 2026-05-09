@@ -43,6 +43,18 @@
 		modelKeyResult?.ok && replicateResult?.ok && elevenLabsResult?.ok && falResult?.ok
 	);
 
+	/**
+	 * Some providers (Vercel AI Gateway, Replicate) block direct browser pings via CORS
+	 * even though they accept the same keys at generation time through the SDK. Don't
+	 * gate progression on the test result — just require all four fields to be filled.
+	 */
+	const allKeysPresent = $derived(
+		(useAiGateway ? aiGatewayKey.trim() : anthropicKey.trim()).length > 0 &&
+			replicateKey.trim().length > 0 &&
+			elevenLabsKey.trim().length > 0 &&
+			falKey.trim().length > 0
+	);
+
 	const validVoices = $derived(
 		voices.filter((v) => v.label.trim() && v.elevenLabsVoiceId.trim())
 	);
@@ -275,12 +287,20 @@
 							/>
 						</div>
 
+						{#if allKeysPresent && !allKeysVerified}
+							<p class="rounded-md border border-border bg-background/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+								Some test pings can fail with <span class="font-mono">Failed to fetch</span> because
+								Vercel AI Gateway and Replicate block direct browser calls via CORS. Your keys still
+								work at generation time through the SDK — you can continue.
+							</p>
+						{/if}
+
 						<div class="flex items-center justify-between border-t border-border pt-4">
 							<Button variant="ghost" size="sm" onclick={back} class="h-8 text-muted-foreground">
 								<HIcon name="arrow-left-01" class="h-3.5 w-3.5" />
 								Back
 							</Button>
-							<Button size="sm" onclick={next} disabled={!allKeysVerified} class="h-8">
+							<Button size="sm" onclick={next} disabled={!allKeysPresent} class="h-8">
 								Continue
 								<HIcon name="arrow-right-01" class="h-3.5 w-3.5" />
 							</Button>
