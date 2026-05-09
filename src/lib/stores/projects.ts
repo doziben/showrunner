@@ -2,7 +2,8 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { nanoid } from 'nanoid';
 import { db } from '$lib/db';
-import type { Project, Scene } from '$lib/types';
+import type { LipsyncProvider, Project, Scene } from '$lib/types';
+import { DEFAULT_LIPSYNC_PROVIDER } from '$lib/pipeline/lipsync-models';
 
 type ProjectState = {
 	projects: Project[];
@@ -18,7 +19,12 @@ function createProjectStore() {
 		set({ projects: all, loaded: true });
 	}
 
-	async function create(input: { name: string; avatarId: string; script: string }) {
+	async function create(input: {
+		name: string;
+		avatarId: string;
+		script: string;
+		lipsyncProvider?: LipsyncProvider;
+	}) {
 		const now = Date.now();
 		const next: Project = {
 			id: nanoid(),
@@ -27,6 +33,7 @@ function createProjectStore() {
 			script: input.script,
 			scenes: [],
 			status: 'draft',
+			lipsyncProvider: input.lipsyncProvider ?? DEFAULT_LIPSYNC_PROVIDER,
 			createdAt: now,
 			updatedAt: now
 		};

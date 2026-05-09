@@ -128,16 +128,20 @@ async function runScene(projectId: string, sceneId: string, ctx: RunContext): Pr
 	}
 	await patchScene(projectId, sceneId, { avatarImageBase64 });
 
-	// 3. Lipsync. Veed Fabric caps at 30s — cap input audio if longer.
+	// 3. Lipsync. Provider chosen at the project level (p-video / fabric / aurora).
 	await patchScene(projectId, sceneId, { status: 'generating-lipsync' });
 	const lipJob = trackJob(projectId, sceneId, 'lipsync');
 	try {
+		const project = await db.projects.get(projectId);
+		const provider = project?.lipsyncProvider ?? 'p-video';
 		const lipsyncVideoBase64 = await withRetry('lipsync', () =>
 			generateLipsync({
+				provider,
+				avatar: ctx.avatar,
+				scene: fresh,
 				imageDataUrl: avatarImageBase64,
 				audioDataUrl: voiceoverBase64,
-				apiKey: ctx.config.falKey,
-				resolution: '480p'
+				config: ctx.config
 			})
 		);
 		finishJob(lipJob, 'success');

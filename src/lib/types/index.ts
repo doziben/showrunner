@@ -60,6 +60,8 @@ export interface Scene {
 
 export type ProjectStatus = 'draft' | 'generating' | 'complete' | 'failed';
 
+export type LipsyncProvider = 'p-video' | 'fabric' | 'aurora';
+
 export interface Project {
 	id: string;
 	name: string;
@@ -67,6 +69,8 @@ export interface Project {
 	script: string;
 	scenes: Scene[];
 	status: ProjectStatus;
+	/** Optional for backwards-compat with projects created before the picker shipped. */
+	lipsyncProvider?: LipsyncProvider;
 	createdAt: number;
 	updatedAt: number;
 }

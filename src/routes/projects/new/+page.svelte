@@ -11,6 +11,9 @@
 	import { avatarStore } from '$lib/stores/avatars';
 	import { projectStore } from '$lib/stores/projects';
 	import { generateStoryboard } from '$lib/pipeline/storyboard';
+	import { DEFAULT_LIPSYNC_PROVIDER } from '$lib/pipeline/lipsync-models';
+	import LipsyncModelPicker from '$lib/components/LipsyncModelPicker.svelte';
+	import type { LipsyncProvider } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Loader from '@lucide/svelte/icons/loader-2';
@@ -23,6 +26,7 @@
 	let avatarId = $state(page.url.searchParams.get('avatarId') ?? '');
 	let script = $state('');
 	let generating = $state(false);
+	let lipsyncProvider = $state<LipsyncProvider>(DEFAULT_LIPSYNC_PROVIDER);
 
 	$effect(() => {
 		if (!avatarId && avatars.length > 0) avatarId = avatars[0].id;
@@ -56,7 +60,8 @@
 			const project = await projectStore.create({
 				name: name.trim(),
 				avatarId,
-				script: script.trim()
+				script: script.trim(),
+				lipsyncProvider
 			});
 			const scenes = await generateStoryboard(config, script);
 			await projectStore.setScenes(project.id, scenes);
@@ -150,6 +155,27 @@
 							</div>
 						</div>
 					{/if}
+				</div>
+
+				<div class="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+					<div class="flex items-center justify-between">
+						<p class="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Lipsync model</p>
+						<a
+							href="https://github.com/anthropics/showrunner/blob/main/docs/lipsync.md"
+							target="_blank"
+							rel="noreferrer"
+							class="text-[11px] text-muted-foreground hover:text-foreground"
+						>
+							Compare →
+						</a>
+					</div>
+					<LipsyncModelPicker
+						value={lipsyncProvider}
+						onChange={(p) => (lipsyncProvider = p)}
+					/>
+					<p class="text-[11px] leading-relaxed text-muted-foreground">
+						You can switch the model later in the storyboard view.
+					</p>
 				</div>
 
 				<div class="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">

@@ -9,10 +9,12 @@
 	import { configStore } from '$lib/stores/config';
 	import { jobStore } from '$lib/stores/jobs';
 	import SceneCard from '$lib/components/SceneCard.svelte';
+	import LipsyncModelPicker from '$lib/components/LipsyncModelPicker.svelte';
 	import { estimateCost, fmtUsd } from '$lib/helpers/cost';
 	import { formatDuration } from '$lib/helpers/duration';
 	import { runProjectPipeline, retryScene } from '$lib/pipeline/orchestrator';
-	import type { Scene } from '$lib/types';
+	import { DEFAULT_LIPSYNC_PROVIDER, getLipsyncModel } from '$lib/pipeline/lipsync-models';
+	import type { LipsyncProvider, Scene } from '$lib/types';
 	import { nanoid } from 'nanoid';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
@@ -29,7 +31,16 @@
 	);
 	const config = $derived($configStore.config);
 	const scenes = $derived(project?.scenes ?? []);
-	const cost = $derived(estimateCost(scenes));
+	const lipsyncProvider = $derived<LipsyncProvider>(
+		project?.lipsyncProvider ?? DEFAULT_LIPSYNC_PROVIDER
+	);
+	const lipsyncModel = $derived(getLipsyncModel(lipsyncProvider));
+	const cost = $derived(estimateCost(scenes, lipsyncProvider));
+
+	async function changeLipsyncProvider(next: LipsyncProvider) {
+		if (!project || project.lipsyncProvider === next) return;
+		await projectStore.patch(project.id, { lipsyncProvider: next });
+	}
 
 	let dragIndex = $state<number | null>(null);
 	let confirmingDelete = $state(false);
@@ -250,7 +261,7 @@
 				</div>
 			</div>
 
-			<aside class="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface px-5 py-6 lg:flex">
+			<aside class="hidden w-80 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-surface px-5 py-6 lg:flex">
 				<div class="flex flex-col gap-2">
 					<p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Preview</p>
 					<div class="flex flex-col gap-1.5 text-[13px]">
@@ -269,6 +280,15 @@
 					</div>
 				</div>
 
+				<div class="flex flex-col gap-2 border-t border-border/60 pt-4">
+					<p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Lipsync model</p>
+					<LipsyncModelPicker
+						value={lipsyncProvider}
+						avatarSeconds={cost.avatarSceneSeconds}
+						onChange={changeLipsyncProvider}
+					/>
+				</div>
+
 				<div class="border-t border-border/60 pt-4">
 					<p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Estimated cost</p>
 					<div class="mt-2 space-y-1 text-[12px]">
@@ -281,7 +301,7 @@
 							<span class="tabular-nums">{fmtUsd(cost.image)}</span>
 						</div>
 						<div class="flex justify-between text-muted-foreground">
-							<span>Lipsync</span>
+							<span>Lipsync ({lipsyncModel.label})</span>
 							<span class="tabular-nums">{fmtUsd(cost.lipsync)}</span>
 						</div>
 					</div>
@@ -290,7 +310,7 @@
 						<span class="text-xl font-medium tabular-nums">{fmtUsd(cost.total)}</span>
 					</div>
 					<p class="mt-3 text-[10px] leading-relaxed text-muted-foreground">
-						Voiceovers ~$0.30/min · Flux $0.04/image · Veed Fabric $0.08/sec @ 480p.
+						Voiceovers ~$0.30/min · Flux $0.04/image · {lipsyncModel.label} ${lipsyncModel.pricePerSecond.toFixed(2)}/sec @ {lipsyncModel.defaultResolution}.
 					</p>
 				</div>
 			</aside>

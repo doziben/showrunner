@@ -1,0 +1,52 @@
+import type { LipsyncProvider } from '$lib/types';
+
+/**
+ * Public-facing catalog of the lipsync model options.
+ * Costs are per second of generated video at the model's default resolution.
+ * Source: provider docs as of Showrunner v0.1 — update when upstream pricing changes.
+ */
+export interface LipsyncModelInfo {
+	id: LipsyncProvider;
+	label: string;
+	provider: 'replicate' | 'fal';
+	defaultResolution: string;
+	pricePerSecond: number;
+	tagline: string;
+	maxDurationSec: number;
+}
+
+export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
+	'p-video': {
+		id: 'p-video',
+		label: 'PrunaAI P-Video',
+		provider: 'replicate',
+		defaultResolution: '720p',
+		pricePerSecond: 0.02,
+		tagline: 'Cheapest. Optimized variant, 720p.',
+		maxDurationSec: 10
+	},
+	fabric: {
+		id: 'fabric',
+		label: 'Veed Fabric 1.0',
+		provider: 'fal',
+		defaultResolution: '480p',
+		pricePerSecond: 0.08,
+		tagline: 'Reliable middle. 480p, broad codec support.',
+		maxDurationSec: 60
+	},
+	aurora: {
+		id: 'aurora',
+		label: 'Creatify Aurora',
+		provider: 'fal',
+		defaultResolution: '720p',
+		pricePerSecond: 0.14,
+		tagline: 'Highest quality. 720p, polished output.',
+		maxDurationSec: 60
+	}
+};
+
+export const DEFAULT_LIPSYNC_PROVIDER: LipsyncProvider = 'p-video';
+
+export function getLipsyncModel(provider: LipsyncProvider | undefined): LipsyncModelInfo {
+	return LIPSYNC_MODELS[provider ?? DEFAULT_LIPSYNC_PROVIDER];
+}
