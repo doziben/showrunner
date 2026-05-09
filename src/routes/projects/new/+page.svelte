@@ -161,7 +161,7 @@
 					<div class="flex items-center justify-between">
 						<p class="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Lipsync model</p>
 						<a
-							href="https://github.com/anthropics/showrunner/blob/main/docs/lipsync.md"
+							href="https://github.com/doziben/showrunner#lipsync-models"
 							target="_blank"
 							rel="noreferrer"
 							class="text-[11px] text-muted-foreground hover:text-foreground"

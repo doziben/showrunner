@@ -124,7 +124,7 @@
 		</a>
 		<div class="flex items-center gap-0.5 text-muted-foreground">
 			<a
-				href="https://github.com/anthropics/showrunner/issues"
+				href="https://github.com/doziben/showrunner#troubleshooting"
 				target="_blank"
 				rel="noreferrer"
 				aria-label="Help"
