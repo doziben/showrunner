@@ -8,6 +8,7 @@
 [![SvelteKit](https://img.shields.io/badge/SvelteKit-2-FF3E00.svg)](https://kit.svelte.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](https://www.typescriptlang.org/)
 [![Local-first](https://img.shields.io/badge/local--first-yes-22c55e.svg)](#local-first)
+[![Buy Me a Coffee](https://img.shields.io/badge/buy%20me%20a%20coffee-doziben-FFDD00?logo=buy-me-a-coffee&logoColor=000)](https://buymeacoffee.com/doziben)
 
 </div>
 
@@ -263,6 +264,14 @@ Quick version: read `spec.md`, keep it client-side, run `pnpm exec svelte-check 
 ## Security
 
 See `SECURITY.md` for the threat model and how to report vulnerabilities.
+
+## Support the project
+
+Showrunner is free under MIT. If it saves you time and you want to chip in toward continued development:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-doziben-FFDD00?logo=buy-me-a-coffee&logoColor=000)](https://buymeacoffee.com/doziben)
+
+Donations support development time and provider testing costs (every model swap eats real $$ to validate). They are not payments for support, features, or refunds — just a tip jar.
 
 ## Acknowledgments
 
