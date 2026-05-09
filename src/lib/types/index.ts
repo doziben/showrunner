@@ -60,7 +60,39 @@ export interface Scene {
 
 export type ProjectStatus = 'draft' | 'generating' | 'complete' | 'failed';
 
+export type TxKind =
+	| 'storyboard'
+	| 'voiceover'
+	| 'avatar-portrait'
+	| 'avatar-shot'
+	| 'lipsync';
+
+export type TxProvider = 'gateway' | 'anthropic' | 'elevenlabs' | 'replicate' | 'fal';
+
+export type TxUnit = 'images' | 'seconds' | 'tokens' | 'characters';
+
+export interface Transaction {
+	id: string;
+	timestamp: number;
+	projectId?: string;
+	avatarId?: string;
+	sceneId?: string;
+	kind: TxKind;
+	provider: TxProvider;
+	model: string;
+	quantity: number;
+	unit: TxUnit;
+	costUsd: number;
+	status: 'success' | 'failed';
+	notes?: string;
+}
+
 export type LipsyncProvider = 'p-video' | 'fabric' | 'aurora';
+
+/**
+ * The shape we send into recordTransaction — id + timestamp filled in by the recorder.
+ */
+export type TxInput = Omit<Transaction, 'id' | 'timestamp'>;
 
 export interface Project {
 	id: string;

@@ -8,10 +8,7 @@
 	import { avatarStore } from '$lib/stores/avatars';
 	import { testElevenLabsVoice } from '$lib/pipeline/test-connections';
 	import type { Avatar } from '$lib/types';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
-	import Trash from '@lucide/svelte/icons/trash-2';
-	import Play from '@lucide/svelte/icons/play';
-	import Loader from '@lucide/svelte/icons/loader-2';
+	import HIcon from '$lib/components/HIcon.svelte';
 	import { toast } from 'svelte-sonner';
 
 	const id = $derived(page.params.id);
@@ -52,7 +49,7 @@
 	<PageHeader title={avatar?.name ?? 'Avatar'}>
 		{#snippet actions()}
 			<Button variant="ghost" size="sm" href="/avatars" class="h-8 text-muted-foreground">
-				<ArrowLeft class="h-3.5 w-3.5" />
+				<HIcon name="arrow-left-01" class="h-3.5 w-3.5" />
 				Back
 			</Button>
 			{#if avatar}
@@ -102,10 +99,10 @@
 						<div class="flex items-center gap-2 sm:col-span-2">
 							<Button variant="outline" size="sm" onclick={previewVoice} disabled={!voice || testing} class="h-8">
 								{#if testing}
-									<Loader class="h-3.5 w-3.5 animate-spin" />
+									<HIcon name="loading-03" class="h-3.5 w-3.5 animate-spin" />
 									Loading
 								{:else}
-									<Play class="h-3.5 w-3.5" />
+									<HIcon name="play" class="h-3.5 w-3.5" />
 									Play sample
 								{/if}
 							</Button>
@@ -117,7 +114,7 @@
 							<Dialog.Trigger>
 								{#snippet child({ props })}
 									<Button variant="outline" size="sm" class="h-8 text-destructive" {...props}>
-										<Trash class="h-3.5 w-3.5" />
+										<HIcon name="delete-02" class="h-3.5 w-3.5" />
 										Delete
 									</Button>
 								{/snippet}

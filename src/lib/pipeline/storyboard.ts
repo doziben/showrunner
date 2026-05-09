@@ -39,16 +39,26 @@ function getModel(config: Config) {
 	return anthropic(STORYBOARD_MODEL_ID);
 }
 
+export type StoryboardResult = {
+	scenes: Scene[];
+	usage: { inputTokens: number; outputTokens: number };
+	model: string;
+	provider: 'gateway' | 'anthropic';
+};
+
 /**
- * Run the storyboard agent. Returns Scene[] ready for editing.
- * Caller is responsible for persisting to the project store.
+ * Run the storyboard agent. Returns scenes plus the token usage so the caller
+ * can record the cost in the transaction log.
  */
-export async function generateStoryboard(config: Config, script: string): Promise<Scene[]> {
+export async function generateStoryboard(
+	config: Config,
+	script: string
+): Promise<StoryboardResult> {
 	if (!script.trim()) throw new Error('Script is empty');
 
 	const model = getModel(config);
 
-	const { object } = await generateObject({
+	const result = await generateObject({
 		model,
 		schema: storyboardSchema,
 		system: STORYBOARD_SYSTEM_PROMPT,
@@ -57,7 +67,7 @@ export async function generateStoryboard(config: Config, script: string): Promis
 		maxRetries: 2
 	});
 
-	return object.scenes.map((s, index) => ({
+	const scenes: Scene[] = result.object.scenes.map((s, index) => ({
 		id: nanoid(),
 		order: index,
 		type: s.type,
@@ -69,4 +79,21 @@ export async function generateStoryboard(config: Config, script: string): Promis
 		recordingInstructions: s.type === 'broll' ? s.recordingInstructions : undefined,
 		status: 'pending'
 	}));
+
+	const usage = (result.usage ?? {}) as {
+		inputTokens?: number;
+		outputTokens?: number;
+		promptTokens?: number;
+		completionTokens?: number;
+	};
+
+	return {
+		scenes,
+		usage: {
+			inputTokens: usage.inputTokens ?? usage.promptTokens ?? 0,
+			outputTokens: usage.outputTokens ?? usage.completionTokens ?? 0
+		},
+		model: STORYBOARD_MODEL_ID,
+		provider: config.useAiGateway ? 'gateway' : 'anthropic'
+	};
 }

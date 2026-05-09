@@ -6,7 +6,7 @@
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 	import type { ComponentProps } from "svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import XIcon from '@lucide/svelte/icons/x';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	let {
 		ref = $bindable(null),
@@ -38,7 +38,7 @@
 			<DialogPrimitive.Close data-slot="dialog-close">
 				{#snippet child({ props })}
 					<Button variant="ghost" class="absolute top-2 right-2" size="icon-sm" {...props}>
-						<XIcon  />
+						<HIcon name="cancel-01" />
 						<span class="sr-only">Close</span>
 					</Button>
 				{/snippet}

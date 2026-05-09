@@ -16,9 +16,7 @@
 	import type { Voice } from '$lib/types';
 	import { nanoid } from 'nanoid';
 	import { toast } from 'svelte-sonner';
-	import Plus from '@lucide/svelte/icons/plus';
-	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
-	import Trash from '@lucide/svelte/icons/trash-2';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	const config = $derived($configStore.config);
 
@@ -125,7 +123,7 @@
 								modelKeyResult = null;
 							}}
 						>
-							<RefreshCcw class="h-3 w-3" />
+							<HIcon name="rotate-left-01" class="h-3 w-3" />
 							{useAiGateway ? 'Use Anthropic direct' : 'Use AI Gateway'}
 						</Button>
 					</header>
@@ -194,7 +192,7 @@
 							</p>
 						</div>
 						<Button variant="outline" size="sm" onclick={addVoice} class="h-7 text-[11px]">
-							<Plus class="h-3 w-3" />
+							<HIcon name="add-01" class="h-3 w-3" />
 							Add voice
 						</Button>
 					</header>
@@ -222,7 +220,7 @@
 						<Dialog.Trigger>
 							{#snippet child({ props })}
 								<Button variant="outline" size="sm" class="h-8 text-destructive" {...props}>
-									<Trash class="h-3.5 w-3.5" />
+									<HIcon name="delete-02" class="h-3.5 w-3.5" />
 									Reset
 								</Button>
 							{/snippet}

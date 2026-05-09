@@ -6,12 +6,7 @@
 	import { cn } from '$lib/utils';
 	import { estimateSeconds } from '$lib/helpers/duration';
 	import type { Scene } from '$lib/types';
-	import GripVertical from '@lucide/svelte/icons/grip-vertical';
-	import Trash from '@lucide/svelte/icons/trash-2';
-	import Loader from '@lucide/svelte/icons/loader-2';
-	import Check from '@lucide/svelte/icons/check';
-	import AlertTriangle from '@lucide/svelte/icons/triangle-alert';
-	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	interface Props {
 		scene: Scene;
@@ -58,17 +53,17 @@
 		</span>
 		{#if scene.status === 'complete'}
 			<span class="flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-emerald-400/90">
-				<Check class="h-2.5 w-2.5" />
+				<HIcon name="tick-02" class="h-2.5 w-2.5" />
 				Done
 			</span>
 		{:else if scene.status === 'failed'}
 			<span class="flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-destructive">
-				<AlertTriangle class="h-2.5 w-2.5" />
+				<HIcon name="alert-02" class="h-2.5 w-2.5" />
 				Failed
 			</span>
 		{:else if scene.status !== 'pending'}
 			<span class="flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-				<Loader class="h-2.5 w-2.5 animate-spin" />
+				<HIcon name="loading-03" class="h-2.5 w-2.5 animate-spin" />
 				{scene.status === 'generating-voiceover'
 					? 'Voiceover'
 					: scene.status === 'generating-image'
@@ -97,7 +92,7 @@
 			aria-label="Drag to reorder"
 			tabindex={-1}
 		>
-			<GripVertical class="h-3.5 w-3.5" />
+			<HIcon name="drag-02" class="h-3.5 w-3.5" />
 		</button>
 
 		<div class="flex flex-1 flex-col gap-3">
@@ -166,7 +161,7 @@
 				<div class="ml-auto flex items-center gap-1">
 					{#if scene.status === 'failed' && onRetry}
 						<Button variant="ghost" size="sm" onclick={onRetry} class="h-7 text-[11px]">
-							<RotateCcw class="h-3 w-3" />
+							<HIcon name="rotate-left-01" class="h-3 w-3" />
 							Retry
 						</Button>
 					{/if}
@@ -176,7 +171,7 @@
 						aria-label="Delete scene"
 						class="rounded-md p-1.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-destructive"
 					>
-						<Trash class="h-3.5 w-3.5" />
+						<HIcon name="delete-02" class="h-3.5 w-3.5" />
 					</button>
 				</div>
 			</div>

@@ -17,10 +17,7 @@
 	import type { Voice } from '$lib/types';
 	import { nanoid } from 'nanoid';
 	import { toast } from 'svelte-sonner';
-	import ArrowRight from '@lucide/svelte/icons/arrow-right';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
-	import Plus from '@lucide/svelte/icons/plus';
-	import Check from '@lucide/svelte/icons/check';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	let step = $state(0);
 
@@ -189,7 +186,7 @@
 
 						<Button onclick={next} class="mx-auto h-9 px-6 text-[13px]">
 							Get started
-							<ArrowRight class="h-3.5 w-3.5" />
+							<HIcon name="arrow-right-01" class="h-3.5 w-3.5" />
 						</Button>
 					</div>
 				{:else if step === 1}
@@ -280,12 +277,12 @@
 
 						<div class="flex items-center justify-between border-t border-border pt-4">
 							<Button variant="ghost" size="sm" onclick={back} class="h-8 text-muted-foreground">
-								<ArrowLeft class="h-3.5 w-3.5" />
+								<HIcon name="arrow-left-01" class="h-3.5 w-3.5" />
 								Back
 							</Button>
 							<Button size="sm" onclick={next} disabled={!allKeysVerified} class="h-8">
 								Continue
-								<ArrowRight class="h-3.5 w-3.5" />
+								<HIcon name="arrow-right-01" class="h-3.5 w-3.5" />
 							</Button>
 						</div>
 					</div>
@@ -311,25 +308,25 @@
 						</div>
 
 						<Button variant="outline" size="sm" onclick={addVoice} class="h-8 self-start text-[12px]">
-							<Plus class="h-3.5 w-3.5" />
+							<HIcon name="add-01" class="h-3.5 w-3.5" />
 							Add voice
 						</Button>
 
 						<div class="flex items-center justify-between border-t border-border pt-4">
 							<Button variant="ghost" size="sm" onclick={back} class="h-8 text-muted-foreground">
-								<ArrowLeft class="h-3.5 w-3.5" />
+								<HIcon name="arrow-left-01" class="h-3.5 w-3.5" />
 								Back
 							</Button>
 							<Button size="sm" onclick={next} disabled={validVoices.length === 0} class="h-8">
 								Continue
-								<ArrowRight class="h-3.5 w-3.5" />
+								<HIcon name="arrow-right-01" class="h-3.5 w-3.5" />
 							</Button>
 						</div>
 					</div>
 				{:else if step === 3}
 					<div class="flex flex-col gap-5">
 						<div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
-							<Check class="h-4 w-4" />
+							<HIcon name="tick-02" class="h-4 w-4" />
 						</div>
 						<div class="space-y-1.5 text-center">
 							<h2 class="text-xl font-medium">You're all set</h2>
@@ -346,21 +343,21 @@
 							<div class="flex items-center justify-between">
 								<span class="text-muted-foreground">Replicate</span>
 								<span class="flex items-center gap-1 text-emerald-400/90">
-									<Check class="h-3 w-3" />
+									<HIcon name="tick-02" class="h-3 w-3" />
 									Connected
 								</span>
 							</div>
 							<div class="flex items-center justify-between">
 								<span class="text-muted-foreground">ElevenLabs</span>
 								<span class="flex items-center gap-1 text-emerald-400/90">
-									<Check class="h-3 w-3" />
+									<HIcon name="tick-02" class="h-3 w-3" />
 									Connected
 								</span>
 							</div>
 							<div class="flex items-center justify-between">
 								<span class="text-muted-foreground">fal.ai</span>
 								<span class="flex items-center gap-1 text-emerald-400/90">
-									<Check class="h-3 w-3" />
+									<HIcon name="tick-02" class="h-3 w-3" />
 									Connected
 								</span>
 							</div>
@@ -372,12 +369,12 @@
 
 						<div class="flex items-center justify-between border-t border-border pt-4">
 							<Button variant="ghost" size="sm" onclick={back} class="h-8 text-muted-foreground">
-								<ArrowLeft class="h-3.5 w-3.5" />
+								<HIcon name="arrow-left-01" class="h-3.5 w-3.5" />
 								Back
 							</Button>
 							<Button onclick={finish} disabled={saving} size="sm" class="h-8">
 								{saving ? 'Saving…' : 'Create your first avatar'}
-								<ArrowRight class="h-3.5 w-3.5" />
+								<HIcon name="arrow-right-01" class="h-3.5 w-3.5" />
 							</Button>
 						</div>
 					</div>

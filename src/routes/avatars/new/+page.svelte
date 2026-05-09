@@ -9,15 +9,13 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { configStore } from '$lib/stores/config';
 	import { avatarStore } from '$lib/stores/avatars';
+	import { transactionStore } from '$lib/stores/transactions';
 	import { generateAvatarPortraits } from '$lib/pipeline/avatar-image';
+	import { costForAvatarImage } from '$lib/helpers/transactions';
 	import { fileToBase64 } from '$lib/helpers/image';
 	import { cn } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
-	import Upload from '@lucide/svelte/icons/upload';
-	import Check from '@lucide/svelte/icons/check';
-	import Loader from '@lucide/svelte/icons/loader-2';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	const config = $derived($configStore.config);
 	const voices = $derived(config?.voices ?? []);
@@ -73,6 +71,16 @@
 			});
 			variations = results;
 			selectedIndex = 0;
+			await transactionStore.record({
+				kind: 'avatar-portrait',
+				provider: 'replicate',
+				model: 'openai/gpt-image-2',
+				quantity: results.length,
+				unit: 'images',
+				costUsd: costForAvatarImage(results.length),
+				status: 'success',
+				notes: `${results.length} variations`
+			});
 		} catch (e) {
 			console.error(e);
 			toast.error(e instanceof Error ? e.message : 'Image generation failed');
@@ -152,7 +160,7 @@
 	<PageHeader title="New avatar">
 		{#snippet actions()}
 			<Button variant="ghost" size="sm" href="/avatars" class="h-8 text-muted-foreground">
-				<ArrowLeft class="h-3.5 w-3.5" />
+				<HIcon name="arrow-left-01" class="h-3.5 w-3.5" />
 				Cancel
 			</Button>
 			<Button size="sm" onclick={save} disabled={saving} class="h-8">
@@ -171,11 +179,11 @@
 				>
 					<Tabs.List class="grid w-full grid-cols-2">
 						<Tabs.Trigger value="generate" class="text-[12px]">
-							<Sparkles class="h-3.5 w-3.5" />
+							<HIcon name="sparkles" class="h-3.5 w-3.5" />
 							Generate with AI
 						</Tabs.Trigger>
 						<Tabs.Trigger value="import" class="text-[12px]">
-							<Upload class="h-3.5 w-3.5" />
+							<HIcon name="upload-01" class="h-3.5 w-3.5" />
 							Import existing
 						</Tabs.Trigger>
 					</Tabs.List>
@@ -210,10 +218,10 @@
 							disabled={generating || !description.trim()}
 						>
 							{#if generating}
-								<Loader class="h-3.5 w-3.5 animate-spin" />
+								<HIcon name="loading-03" class="h-3.5 w-3.5 animate-spin" />
 								Generating 4 variations
 							{:else}
-								<Sparkles class="h-3.5 w-3.5" />
+								<HIcon name="sparkles" class="h-3.5 w-3.5" />
 								Generate avatar
 							{/if}
 						</Button>
@@ -240,7 +248,7 @@
 											<div
 												class="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background"
 											>
-												<Check class="h-3 w-3" />
+												<HIcon name="tick-02" class="h-3 w-3" />
 											</div>
 										{/if}
 									</button>
@@ -262,7 +270,7 @@
 							<div
 								class="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground"
 							>
-								<Upload class="h-4 w-4" />
+								<HIcon name="upload-01" class="h-4 w-4" />
 							</div>
 							<div class="text-center">
 								<p class="text-[13px] font-medium text-foreground">Drop or click to upload</p>

@@ -3,8 +3,7 @@
 	import { projectStore } from '$lib/stores/projects';
 	import { avatarStore } from '$lib/stores/avatars';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import Plus from '@lucide/svelte/icons/plus';
-	import Clapperboard from '@lucide/svelte/icons/clapperboard';
+	import HIcon from '$lib/components/HIcon.svelte';
 	import type { Avatar, Project } from '$lib/types';
 
 	let search = $state('');
@@ -50,7 +49,7 @@
 	<PageHeader title="All" searchPlaceholder="Search projects" bind:search>
 		{#snippet actions()}
 			<Button href="/projects/new" size="sm" class="h-8">
-				<Plus class="h-3.5 w-3.5" />
+				<HIcon name="add-01" class="h-3.5 w-3.5" />
 				New project
 			</Button>
 		{/snippet}
@@ -62,7 +61,7 @@
 				<div
 					class="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground"
 				>
-					<Clapperboard class="h-4 w-4" />
+					<HIcon name="film-01" class="h-4 w-4" />
 				</div>
 				<div class="space-y-1.5">
 					<p class="text-[15px] font-medium text-foreground">Build an avatar first</p>
@@ -77,7 +76,7 @@
 				<div
 					class="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground"
 				>
-					<Clapperboard class="h-4 w-4" />
+					<HIcon name="film-01" class="h-4 w-4" />
 				</div>
 				<div class="space-y-1.5">
 					<p class="text-[15px] font-medium text-foreground">No projects</p>
@@ -86,7 +85,7 @@
 					</p>
 				</div>
 				<Button href="/projects/new" size="sm" class="mt-2 h-8">
-					<Plus class="h-3.5 w-3.5" />
+					<HIcon name="add-01" class="h-3.5 w-3.5" />
 					New project
 				</Button>
 			</div>
@@ -96,7 +95,7 @@
 					<div
 						class="flex aspect-[4/3] w-full items-center justify-center rounded-xl border border-dashed border-border bg-card/40 text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
 					>
-						<Plus class="h-5 w-5" />
+						<HIcon name="add-01" class="h-5 w-5" />
 					</div>
 					<div class="flex flex-col gap-0.5 px-1">
 						<h3 class="truncate text-[13px] font-medium text-foreground">New project</h3>
@@ -121,7 +120,7 @@
 								/>
 							{:else}
 								<div class="flex h-full w-full items-center justify-center text-muted-foreground/40">
-									<Clapperboard class="h-8 w-8" />
+									<HIcon name="film-01" class="h-8 w-8" />
 								</div>
 							{/if}
 						</div>

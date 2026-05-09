@@ -4,8 +4,7 @@
 	import { configStore } from '$lib/stores/config';
 	import AvatarCard from '$lib/components/AvatarCard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import Plus from '@lucide/svelte/icons/plus';
-	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	let search = $state('');
 
@@ -24,7 +23,7 @@
 	<PageHeader title="Avatars" searchPlaceholder="Search avatars" bind:search>
 		{#snippet actions()}
 			<Button href="/avatars/new" size="sm" class="h-8">
-				<Plus class="h-3.5 w-3.5" />
+				<HIcon name="add-01" class="h-3.5 w-3.5" />
 				New avatar
 			</Button>
 		{/snippet}
@@ -36,7 +35,7 @@
 				<div
 					class="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground"
 				>
-					<LayoutGrid class="h-4 w-4" />
+					<HIcon name="grid" class="h-4 w-4" />
 				</div>
 				<div class="space-y-1.5">
 					<p class="text-[15px] font-medium text-foreground">No avatars yet</p>
@@ -46,7 +45,7 @@
 					</p>
 				</div>
 				<Button href="/avatars/new" size="sm" class="mt-2 h-8">
-					<Plus class="h-3.5 w-3.5" />
+					<HIcon name="add-01" class="h-3.5 w-3.5" />
 					Create avatar
 				</Button>
 			</div>
@@ -59,7 +58,7 @@
 					<div
 						class="flex aspect-[4/5] w-full items-center justify-center rounded-xl border border-dashed border-border bg-card/40 text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
 					>
-						<Plus class="h-5 w-5" />
+						<HIcon name="add-01" class="h-5 w-5" />
 					</div>
 					<div class="flex flex-col gap-0.5 px-1">
 						<h3 class="truncate text-[13px] font-medium text-foreground">New avatar</h3>

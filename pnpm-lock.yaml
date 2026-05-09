@@ -17,12 +17,15 @@ importers:
       '@fal-ai/client':
         specifier: ^1.10.1
         version: 1.10.1
+      '@iconify-json/hugeicons':
+        specifier: ^1.2.20
+        version: 1.2.27
+      '@iconify/svelte':
+        specifier: ^5.2.1
+        version: 5.2.1(svelte@5.55.5(@typescript-eslint/types@8.59.2))
       '@internationalized/date':
         specifier: ^3.12.1
         version: 3.12.1
-      '@lucide/svelte':
-        specifier: ^1.14.0
-        version: 1.14.0(svelte@5.55.5(@typescript-eslint/types@8.59.2))
       ai:
         specifier: ^6.0.177
         version: 6.0.177(zod@4.4.3)
@@ -247,6 +250,17 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
+  '@iconify-json/hugeicons@1.2.27':
+    resolution: {integrity: sha512-/KE5DH7OLfZnnQk42cY0Tx0OFYrVE8MDngY12ASGt0yoSIdediZCdvmV9lbiovfezxsDxa6vPh83ojLQNIpR3Q==}
+
+  '@iconify/svelte@5.2.1':
+    resolution: {integrity: sha512-zHmsIPmnIhGd5gc95bNN5FL+GifwMZv7M2rlZEpa7IXYGFJm/XGHdWf6PWQa6OBoC+R69WyiPO9NAj5wjfjbow==}
+    peerDependencies:
+      svelte: '>5.0.0'
+
+  '@iconify/types@2.0.0':
+    resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
+
   '@internationalized/date@3.12.1':
     resolution: {integrity: sha512-6IedsVWXyq4P9Tj+TxuU8WGWM70hYLl12nbYU8jkikVpa6WXapFazPUcHUMDMoWftIDE2ILDkFFte6W2nFCkRQ==}
 
@@ -265,11 +279,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@lucide/svelte@1.14.0':
-    resolution: {integrity: sha512-MVuP5VRCBQa2OaIpaRbuEV4k5OV2dy9MyxA6Tf4Sz/IN0v3zzUU72ObHc9r2Zn/wSMXDg6lLrHrczqI7w7gCzQ==}
-    peerDependencies:
-      svelte: ^5
 
   '@msgpack/msgpack@3.1.3':
     resolution: {integrity: sha512-47XIizs9XZXvuJgoaJUIE2lFoID8ugvc0jzSHP+Ptfk8nTbnR8g788wv48N03Kx0UkAv559HWRQ3yzOgzlRNUA==}
@@ -1624,6 +1633,17 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
+  '@iconify-json/hugeicons@1.2.27':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify/svelte@5.2.1(svelte@5.55.5(@typescript-eslint/types@8.59.2))':
+    dependencies:
+      '@iconify/types': 2.0.0
+      svelte: 5.55.5(@typescript-eslint/types@8.59.2)
+
+  '@iconify/types@2.0.0': {}
+
   '@internationalized/date@3.12.1':
     dependencies:
       '@swc/helpers': 0.5.21
@@ -1646,10 +1666,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@lucide/svelte@1.14.0(svelte@5.55.5(@typescript-eslint/types@8.59.2))':
-    dependencies:
-      svelte: 5.55.5(@typescript-eslint/types@8.59.2)
 
   '@msgpack/msgpack@3.1.3': {}
 

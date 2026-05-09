@@ -3,7 +3,7 @@
 	import { LIPSYNC_MODELS } from '$lib/pipeline/lipsync-models';
 	import { fmtUsd } from '$lib/helpers/cost';
 	import type { LipsyncProvider } from '$lib/types';
-	import Check from '@lucide/svelte/icons/check';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	interface Props {
 		value: LipsyncProvider;
@@ -41,7 +41,7 @@
 					)}
 				>
 					{#if selected}
-						<Check class="h-2.5 w-2.5" />
+						<HIcon name="tick-02" class="h-2.5 w-2.5" />
 					{/if}
 				</span>
 				<span class="flex-1 text-[12.5px] font-medium text-foreground">{model.label}</span>

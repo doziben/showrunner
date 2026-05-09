@@ -2,11 +2,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
-	import Eye from '@lucide/svelte/icons/eye';
-	import EyeOff from '@lucide/svelte/icons/eye-off';
-	import Check from '@lucide/svelte/icons/check';
-	import X from '@lucide/svelte/icons/x';
-	import Loader from '@lucide/svelte/icons/loader-2';
+	import HIcon from '$lib/components/HIcon.svelte';
 	import type { TestResult } from '$lib/pipeline/test-connections';
 
 	interface Props {
@@ -91,9 +87,9 @@
 				aria-label={revealed ? 'Hide' : 'Show'}
 			>
 				{#if revealed}
-					<EyeOff class="h-3.5 w-3.5" />
+					<HIcon name="view-off-slash" class="h-3.5 w-3.5" />
 				{:else}
-					<Eye class="h-3.5 w-3.5" />
+					<HIcon name="eye" class="h-3.5 w-3.5" />
 				{/if}
 			</button>
 		</div>
@@ -105,10 +101,10 @@
 			class="h-9 min-w-[88px] text-[12px]"
 		>
 			{#if testing}
-				<Loader class="h-3.5 w-3.5 animate-spin" />
+				<HIcon name="loading-03" class="h-3.5 w-3.5 animate-spin" />
 				Testing
 			{:else if result?.ok}
-				<Check class="h-3.5 w-3.5 text-emerald-400" />
+				<HIcon name="tick-02" class="h-3.5 w-3.5 text-emerald-400" />
 				Verified
 			{:else}
 				Test
@@ -120,12 +116,12 @@
 	{/if}
 	{#if result?.ok}
 		<p class="flex items-center gap-1 text-[11px] text-emerald-400/90">
-			<Check class="h-3 w-3" />
+			<HIcon name="tick-02" class="h-3 w-3" />
 			{result.message}
 		</p>
 	{:else if result && !result.ok}
 		<p class="flex items-start gap-1 text-[11px] text-destructive">
-			<X class="mt-0.5 h-3 w-3 shrink-0" />
+			<HIcon name="cancel-01" class="mt-0.5 h-3 w-3 shrink-0" />
 			<span>{result.message}</span>
 		</p>
 	{/if}

@@ -1,11 +1,18 @@
 import { db } from '$lib/db';
 import { projectStore } from '$lib/stores/projects';
+import { transactionStore } from '$lib/stores/transactions';
 import { jobStore, type Job, type JobKind } from '$lib/stores/jobs';
-import type { Avatar, Config, Scene } from '$lib/types';
+import type { Avatar, Config, LipsyncProvider, Scene } from '$lib/types';
 import { generateVoiceover } from './voiceover';
 import { generateSceneShot } from './avatar-image';
 import { generateLipsync } from './lipsync';
 import { buildAvatarShotPrompt } from './prompts';
+import { LIPSYNC_MODELS } from './lipsync-models';
+import {
+	costForAvatarImage,
+	costForLipsync,
+	costForVoiceover
+} from '$lib/helpers/transactions';
 import { nanoid } from 'nanoid';
 
 type RunContext = {
@@ -92,6 +99,18 @@ async function runScene(projectId: string, sceneId: string, ctx: RunContext): Pr
 			})
 		);
 		finishJob(voJob, 'success');
+		await transactionStore.record({
+			projectId,
+			avatarId: ctx.avatar.id,
+			sceneId,
+			kind: 'voiceover',
+			provider: 'elevenlabs',
+			model: 'eleven_v3',
+			quantity: initial.durationSeconds,
+			unit: 'seconds',
+			costUsd: costForVoiceover(initial.durationSeconds),
+			status: 'success'
+		});
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
 		finishJob(voJob, 'failed', msg);
@@ -117,6 +136,18 @@ async function runScene(projectId: string, sceneId: string, ctx: RunContext): Pr
 			generateSceneShot({ avatar: ctx.avatar, prompt, apiKey: ctx.config.replicateKey })
 		);
 		finishJob(imgJob, 'success');
+		await transactionStore.record({
+			projectId,
+			avatarId: ctx.avatar.id,
+			sceneId,
+			kind: 'avatar-shot',
+			provider: 'replicate',
+			model: 'openai/gpt-image-2',
+			quantity: 1,
+			unit: 'images',
+			costUsd: costForAvatarImage(1),
+			status: 'success'
+		});
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
 		finishJob(imgJob, 'failed', msg);
@@ -133,7 +164,7 @@ async function runScene(projectId: string, sceneId: string, ctx: RunContext): Pr
 	const lipJob = trackJob(projectId, sceneId, 'lipsync');
 	try {
 		const project = await db.projects.get(projectId);
-		const provider = project?.lipsyncProvider ?? 'p-video';
+		const provider: LipsyncProvider = project?.lipsyncProvider ?? 'p-video';
 		const lipsyncVideoBase64 = await withRetry('lipsync', () =>
 			generateLipsync({
 				provider,
@@ -145,6 +176,19 @@ async function runScene(projectId: string, sceneId: string, ctx: RunContext): Pr
 			})
 		);
 		finishJob(lipJob, 'success');
+		const modelInfo = LIPSYNC_MODELS[provider];
+		await transactionStore.record({
+			projectId,
+			avatarId: ctx.avatar.id,
+			sceneId,
+			kind: 'lipsync',
+			provider: modelInfo.provider,
+			model: modelInfo.label,
+			quantity: fresh.durationSeconds,
+			unit: 'seconds',
+			costUsd: costForLipsync(provider, fresh.durationSeconds),
+			status: 'success'
+		});
 		await patchScene(projectId, sceneId, { lipsyncVideoBase64, status: 'complete' });
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);

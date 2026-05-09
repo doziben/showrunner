@@ -2,9 +2,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
-	import Trash from '@lucide/svelte/icons/trash-2';
-	import Play from '@lucide/svelte/icons/play';
-	import Loader from '@lucide/svelte/icons/loader-2';
+	import HIcon from '$lib/components/HIcon.svelte';
 	import { testElevenLabsVoice } from '$lib/pipeline/test-connections';
 	import type { Voice } from '$lib/types';
 	import { toast } from 'svelte-sonner';
@@ -77,10 +75,10 @@
 		class="h-8 text-[11px]"
 	>
 		{#if testing}
-			<Loader class="h-3 w-3 animate-spin" />
+			<HIcon name="loading-03" class="h-3 w-3 animate-spin" />
 			Test
 		{:else}
-			<Play class="h-3 w-3" />
+			<HIcon name="play" class="h-3 w-3" />
 			Test
 		{/if}
 	</Button>
@@ -91,7 +89,7 @@
 		aria-label="Remove voice"
 		class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"
 	>
-		<Trash class="h-3.5 w-3.5" />
+		<HIcon name="delete-02" class="h-3.5 w-3.5" />
 	</button>
 	<audio bind:this={audio} class="hidden"></audio>
 </div>

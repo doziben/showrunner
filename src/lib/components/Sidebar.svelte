@@ -3,20 +3,15 @@
 	import { cn } from '$lib/utils';
 	import { projectStore } from '$lib/stores/projects';
 	import { avatarStore } from '$lib/stores/avatars';
-	import Settings from '@lucide/svelte/icons/settings';
-	import HelpCircle from '@lucide/svelte/icons/circle-help';
-	import Trash from '@lucide/svelte/icons/trash-2';
-	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
-	import Users from '@lucide/svelte/icons/users';
-	import Clapperboard from '@lucide/svelte/icons/clapperboard';
-	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	const projectCount = $derived($projectStore.projects.length);
 	const avatarCount = $derived($avatarStore.avatars.length);
 
 	const navItems = $derived([
-		{ href: '/avatars', label: 'Avatars', icon: Users, count: avatarCount },
-		{ href: '/projects', label: 'Projects', icon: Clapperboard, count: projectCount }
+		{ href: '/avatars', label: 'Avatars', icon: 'user-group' as const, count: avatarCount },
+		{ href: '/projects', label: 'Projects', icon: 'film-01' as const, count: projectCount },
+		{ href: '/usage', label: 'Usage', icon: 'invoice-01' as const, count: 0 }
 	]);
 
 	function isActive(href: string) {
@@ -49,7 +44,7 @@
 				<span class="truncate text-[13px] font-medium">Showrunner</span>
 				<span class="truncate text-[11px] text-muted-foreground">Local workspace</span>
 			</span>
-			<ChevronsUpDown class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+			<HIcon name="chevrons-down-up" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 		</button>
 	</div>
 
@@ -66,7 +61,7 @@
 						: 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
 				)}
 			>
-				<link.icon class="h-3.5 w-3.5" />
+				<HIcon name={link.icon} class="h-3.5 w-3.5" />
 				<span class="flex-1">{link.label}</span>
 				{#if link.count > 0}
 					<span class="text-[11px] tabular-nums text-muted-foreground">{link.count}</span>
@@ -90,7 +85,7 @@
 						: 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
 				)}
 			>
-				<LayoutGrid class="h-3.5 w-3.5" />
+				<HIcon name="grid" class="h-3.5 w-3.5" />
 				<span class="flex-1">All avatars</span>
 				<span class="text-[11px] tabular-nums text-muted-foreground">{avatarCount}</span>
 			</a>
@@ -103,7 +98,7 @@
 						: 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
 				)}
 			>
-				<LayoutGrid class="h-3.5 w-3.5" />
+				<HIcon name="grid" class="h-3.5 w-3.5" />
 				<span class="flex-1">All projects</span>
 				<span class="text-[11px] tabular-nums text-muted-foreground">{projectCount}</span>
 			</a>
@@ -119,7 +114,7 @@
 			class="flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
 			title="Local projects"
 		>
-			<LayoutGrid class="h-3 w-3" />
+			<HIcon name="grid" class="h-3 w-3" />
 			<span class="tabular-nums">{projectCount}</span>
 		</a>
 		<div class="flex items-center gap-0.5 text-muted-foreground">
@@ -130,7 +125,7 @@
 				aria-label="Help"
 				class="rounded-md p-1.5 transition-colors hover:bg-muted hover:text-foreground"
 			>
-				<HelpCircle class="h-3.5 w-3.5" />
+				<HIcon name="help-circle" class="h-3.5 w-3.5" />
 			</a>
 			<a
 				href="/settings"
@@ -142,7 +137,7 @@
 						: 'hover:bg-muted hover:text-foreground'
 				)}
 			>
-				<Settings class="h-3.5 w-3.5" />
+				<HIcon name="settings-02" class="h-3.5 w-3.5" />
 			</a>
 		</div>
 	</div>

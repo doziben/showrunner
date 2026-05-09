@@ -10,14 +10,14 @@
 	import { configStore } from '$lib/stores/config';
 	import { avatarStore } from '$lib/stores/avatars';
 	import { projectStore } from '$lib/stores/projects';
+	import { transactionStore } from '$lib/stores/transactions';
 	import { generateStoryboard } from '$lib/pipeline/storyboard';
 	import { DEFAULT_LIPSYNC_PROVIDER } from '$lib/pipeline/lipsync-models';
+	import { costForStoryboard } from '$lib/helpers/transactions';
 	import LipsyncModelPicker from '$lib/components/LipsyncModelPicker.svelte';
 	import type { LipsyncProvider } from '$lib/types';
 	import { toast } from 'svelte-sonner';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
-	import Loader from '@lucide/svelte/icons/loader-2';
-	import Wand from '@lucide/svelte/icons/wand-sparkles';
+	import HIcon from '$lib/components/HIcon.svelte';
 
 	const avatars = $derived($avatarStore.avatars);
 	const config = $derived($configStore.config);
@@ -63,9 +63,21 @@
 				script: script.trim(),
 				lipsyncProvider
 			});
-			const scenes = await generateStoryboard(config, script);
-			await projectStore.setScenes(project.id, scenes);
-			toast.success(`Storyboard ready · ${scenes.length} scenes`);
+			const result = await generateStoryboard(config, script);
+			await projectStore.setScenes(project.id, result.scenes);
+			const tokens = result.usage.inputTokens + result.usage.outputTokens;
+			await transactionStore.record({
+				projectId: project.id,
+				kind: 'storyboard',
+				provider: result.provider,
+				model: result.model,
+				quantity: tokens,
+				unit: 'tokens',
+				costUsd: costForStoryboard(result.usage.inputTokens, result.usage.outputTokens),
+				status: 'success',
+				notes: `${result.usage.inputTokens} in · ${result.usage.outputTokens} out`
+			});
+			toast.success(`Storyboard ready · ${result.scenes.length} scenes`);
 			await goto(`/projects/${project.id}/storyboard`);
 		} catch (e) {
 			console.error(e);
@@ -79,15 +91,15 @@
 	<PageHeader title="New project">
 		{#snippet actions()}
 			<Button variant="ghost" size="sm" href="/projects" class="h-8 text-muted-foreground">
-				<ArrowLeft class="h-3.5 w-3.5" />
+				<HIcon name="arrow-left-01" class="h-3.5 w-3.5" />
 				Cancel
 			</Button>
 			<Button size="sm" onclick={generate} disabled={generating} class="h-8">
 				{#if generating}
-					<Loader class="h-3.5 w-3.5 animate-spin" />
+					<HIcon name="loading-03" class="h-3.5 w-3.5 animate-spin" />
 					Generating
 				{:else}
-					<Wand class="h-3.5 w-3.5" />
+					<HIcon name="magic-wand-01" class="h-3.5 w-3.5" />
 					Generate storyboard
 				{/if}
 			</Button>

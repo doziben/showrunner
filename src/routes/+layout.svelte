@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '$lib/register-hugeicons';
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -6,6 +7,7 @@
 	import { configStore } from '$lib/stores/config';
 	import { avatarStore } from '$lib/stores/avatars';
 	import { projectStore } from '$lib/stores/projects';
+	import { transactionStore } from '$lib/stores/transactions';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
 
@@ -20,7 +22,12 @@
 	}
 
 	onMount(async () => {
-		await Promise.all([configStore.load(), avatarStore.load(), projectStore.load()]);
+		await Promise.all([
+			configStore.load(),
+			avatarStore.load(),
+			projectStore.load(),
+			transactionStore.load()
+		]);
 		booted = true;
 	});
 
