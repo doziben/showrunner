@@ -189,6 +189,10 @@ Most likely edits, by file:
 
 Sections 6 and 7 prompts in `spec.md` are the source of truth — keep them in sync if you change the code.
 
+## Icons
+
+Use **Huge Icons** only ([Iconify listing](https://icon-sets.iconify.design/hugeicons)). Wire them through **`@iconify/svelte`** and the **`HIcon`** wrapper (`src/lib/components/HIcon.svelte`): pass the icon name without the `hugeicons:` prefix (for example `<HIcon name="add-01" class="size-4" />`). The set is registered once from `src/lib/register-hugeicons.ts`, imported by `src/routes/+layout.svelte`. Do not add Lucide, Heroicons, or other icon packs for new UI.
+
 ## Project structure
 
 ```
