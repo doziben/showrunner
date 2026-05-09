@@ -117,6 +117,39 @@ Default is P-Video. Switch in the right rail of the storyboard view at any time 
 
 To add a new model: see `src/lib/pipeline/lipsync-models.ts` for the catalog format and `src/lib/pipeline/lipsync.ts` for the dispatcher.
 
+## ElevenLabs v3 audio tags
+
+Voiceovers run on `eleven_v3`, which natively interprets emotion and pacing tags written inline in your script. Showrunner passes them through verbatim — through the storyboard agent, into each scene's `audioLine`, all the way to the TTS call. Nothing gets stripped or escaped.
+
+Categories that work:
+
+| Category | Examples |
+| --- | --- |
+| Emotion | `[confident]`, `[hesitant]`, `[sarcastic]`, `[whispering]`, `[shouting]`, `[exasperated sigh]`, `[laughs]`, `[crying]` |
+| Pacing | `[pause]`, `[long pause]`, `[fast]`, `[slow]` |
+| Timing | `[breathes in]`, `[breathes out]`, `[clears throat]` |
+| Composite | `[slightly mocking]`, `[shifting tone, energetic]`, `[warm, inviting]` *(free-form descriptive tags work too)* |
+
+Example script that exercises the full range — paste this verbatim into a new project:
+
+```
+[confident] Most businesses are using AI for content the wrong way.
+
+[slightly mocking] They open ChatGPT, type "give me content ideas for my brand," [pause] and get back the same generic list every other brand in their niche is getting.
+
+[leaning in] Here's what nobody tells you.
+
+[exasperated sigh] So you spend an hour going back and forth, [tired] and the content still sounds mid.
+
+[shifting tone, energetic] That's why we built the Postana calendar agent.
+
+[warm, inviting] Comment "POSTANA" and I'll send you the link.
+```
+
+Default voice settings are `stability: 0.5`, `similarity_boost: 0.75` — the v3-recommended balance for expressive delivery without identity drift. Tune in `src/lib/pipeline/voiceover.ts` if a specific voice needs different values.
+
+Tags don't count toward the duration estimate (we strip them for word-counting in `src/lib/helpers/duration.ts`), but they do affect the spoken output, so generated audio may run slightly longer than the estimate when you stack many `[pause]` tags.
+
 ## How it works
 
 ```
