@@ -16,7 +16,7 @@
 	"devDependencies": {
 		"@eslint/compat": "^2.0.4",
 		"@eslint/js": "^10.0.1",
-		"@sveltejs/adapter-static": "^3.0.10",
+		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.57.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tailwindcss/vite": "^4.2.2",
@@ -41,8 +41,8 @@
 		"@ai-sdk/anthropic": "^3.0.76",
 		"@ai-sdk/gateway": "^3.0.112",
 		"@fal-ai/client": "^1.10.1",
-		"@iconify/svelte": "^5.2.1",
 		"@iconify-json/hugeicons": "^1.2.20",
+		"@iconify/svelte": "^5.2.1",
 		"@internationalized/date": "^3.12.1",
 		"ai": "^6.0.177",
 		"bits-ui": "^2.18.1",

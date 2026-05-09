@@ -28,13 +28,18 @@ const GATEWAY_MODEL_ID = 'anthropic/claude-opus-4-7';
 function getModel(config: Config) {
 	if (config.useAiGateway) {
 		if (!config.aiGatewayKey) throw new Error('AI Gateway key missing');
-		const gateway = createGateway({ apiKey: config.aiGatewayKey });
+		// Routed through /api/gateway/* → https://ai-gateway.vercel.sh/*
+		const gateway = createGateway({
+			apiKey: config.aiGatewayKey,
+			baseURL: '/api/gateway/v1/ai'
+		});
 		return gateway(GATEWAY_MODEL_ID);
 	}
 	if (!config.anthropicKey) throw new Error('Anthropic key missing');
+	// Routed through /api/anthropic/* → https://api.anthropic.com/*
 	const anthropic = createAnthropic({
 		apiKey: config.anthropicKey,
-		headers: { 'anthropic-dangerous-direct-browser-access': 'true' }
+		baseURL: '/api/anthropic/v1'
 	});
 	return anthropic(STORYBOARD_MODEL_ID);
 }

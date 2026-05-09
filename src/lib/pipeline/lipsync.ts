@@ -7,7 +7,10 @@ let cachedFalKey: string | null = null;
 
 function ensureFalConfigured(apiKey: string) {
 	if (cachedFalKey === apiKey) return;
-	fal.config({ credentials: apiKey });
+	// All fal traffic goes through SvelteKit /api/fal/proxy. The client still
+	// signs requests with the user's key — the proxy validates the target host
+	// and forwards.
+	fal.config({ credentials: apiKey, proxyUrl: '/api/fal/proxy' });
 	cachedFalKey = apiKey;
 }
 
@@ -17,9 +20,14 @@ async function uploadToFalStorage(dataUrl: string): Promise<string> {
 	return await fal.storage.upload(file);
 }
 
-const REPLICATE_API = 'https://api.replicate.com/v1';
+// Routed through SvelteKit /api/replicate/* proxy → https://api.replicate.com/v1/*
+const REPLICATE_API = '/api/replicate';
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
+
+function rewriteReplicateUrl(url: string): string {
+	return url.replace(/^https:\/\/api\.replicate\.com\/v1/, REPLICATE_API);
+}
 
 type ReplicatePrediction = {
 	id: string;
@@ -30,9 +38,10 @@ type ReplicatePrediction = {
 };
 
 async function pollReplicate(predictionUrl: string, key: string): Promise<ReplicatePrediction> {
+	const target = rewriteReplicateUrl(predictionUrl);
 	const start = Date.now();
 	while (true) {
-		const res = await fetch(predictionUrl, { headers: { authorization: `Bearer ${key}` } });
+		const res = await fetch(target, { headers: { authorization: `Bearer ${key}` } });
 		if (!res.ok) {
 			const text = await res.text();
 			throw new Error(`Replicate poll failed: ${res.status} ${text.slice(0, 200)}`);

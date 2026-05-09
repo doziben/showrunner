@@ -1,6 +1,7 @@
 import { arrayBufferToBase64 } from '$lib/helpers/audio';
 
-const ELEVENLABS_API = 'https://api.elevenlabs.io/v1';
+// Routed through SvelteKit /api/elevenlabs/* proxy → https://api.elevenlabs.io/v1/*
+const ELEVENLABS_API = '/api/elevenlabs';
 const VOICEOVER_TIMEOUT_MS = 60_000;
 
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {

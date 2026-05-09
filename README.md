@@ -197,13 +197,16 @@ Tags don't count toward the duration estimate (we strip them for word-counting i
 
 ## Local-first
 
-Showrunner has no server. Concretely:
+Showrunner is local-first with a thin server proxy. Concretely:
 
-- **API keys** live in IndexedDB on the origin you run the app from. They are not synced anywhere.
-- **Avatars and projects** (including generated audio, images, and lipsync videos as base64) all live in IndexedDB.
-- **Different browsers / browser profiles get separate stores.** Run two isolated Showrunner instances by using two browsers.
-- **Clearing site data wipes everything.** Export bundles you care about right after generation. See [Troubleshooting](#troubleshooting) for export quirks.
+- **API keys** live in IndexedDB on the origin you run the app from. They are not synced anywhere and never persist server-side.
+- **Avatars, projects, transactions, and generated outputs** (audio, images, lipsync videos as base64) all live in IndexedDB.
+- **The SvelteKit `/api/*` endpoints are CORS bridges only.** They forward your request to the provider with the auth headers you supplied and stream the response back. They don't store, log, or process anything.
+- **Different browsers / browser profiles get separate stores.** Run isolated instances by using two browsers.
+- **Clearing site data wipes everything.** Export bundles you care about right after generation.
 - **No telemetry.** Showrunner never phones home.
+
+The reason for the proxy: Replicate, Anthropic, and most provider APIs CORS-block direct browser calls. Without a server bridge the pipeline simply doesn't work. With it, the architecture stays effectively "your machine talks to your providers" — the SvelteKit server is just a same-origin CORS hop.
 
 See `SECURITY.md` for the full threat model.
 
@@ -258,17 +261,16 @@ src/
 
 ## Deployment
 
-Showrunner is a static SPA — `pnpm build` outputs to `./build`. Deploy anywhere that serves static files:
+Showrunner is a SvelteKit app with `adapter-auto` — pages are SPA, but `+server.ts` API routes proxy provider calls through CORS-friendly server endpoints. Deploy anywhere that runs Node-based serverless functions:
 
-- **Vercel / Netlify / Cloudflare Pages** — point them at this repo, set the build command to `pnpm build`, output directory to `build`. Done.
-- **GitHub Pages** — drop the `build` directory into a Pages branch.
-- **Self-host** — `pnpm preview` for local; any nginx/Caddy/Apache works for prod.
+- **Vercel** — push the repo, Vercel detects SvelteKit, done. (`adapter-auto` selects `adapter-vercel` automatically.)
+- **Cloudflare Pages / Workers** — install `@sveltejs/adapter-cloudflare` and switch the adapter import.
+- **Netlify** — install `@sveltejs/adapter-netlify`, switch adapter.
+- **Self-host (Node)** — install `@sveltejs/adapter-node`, switch adapter; `pnpm build && node build` to run.
 
-Because there's no backend, deployment is just static hosting. There are no env vars to set.
+There are no env vars to set. Each user pastes their own keys in the onboarding flow.
 
 ## Troubleshooting
-
-**Replicate calls fail with CORS errors.** Replicate's API does not always allow direct browser calls. If you hit this, the simplest workaround is a tiny Cloudflare Worker proxy that forwards `Authorization` and `Content-Type` headers. We may add an opt-in proxy in a future version.
 
 **fal.ai upload failures on Safari.** fal.ai's storage upload occasionally has issues with Safari's strict cookie handling. Try Chrome or Firefox if the lipsync step keeps failing on Safari specifically.
 

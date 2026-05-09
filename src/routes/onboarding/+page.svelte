@@ -289,9 +289,8 @@
 
 						{#if allKeysPresent && !allKeysVerified}
 							<p class="rounded-md border border-border bg-background/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-								Some test pings can fail with <span class="font-mono">Failed to fetch</span> because
-								Vercel AI Gateway and Replicate block direct browser calls via CORS. Your keys still
-								work at generation time through the SDK — you can continue.
+								Tests can take a moment. fal.ai is shape-checked locally and verified on first run.
+								You can continue once all four fields are filled.
 							</p>
 						{/if}
 

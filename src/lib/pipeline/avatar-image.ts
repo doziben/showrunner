@@ -25,14 +25,24 @@ type Prediction = {
 	urls: { get: string; cancel?: string };
 };
 
-const REPLICATE_API = 'https://api.replicate.com/v1';
+// Routed through SvelteKit /api/replicate/* proxy → https://api.replicate.com/v1/*
+const REPLICATE_API = '/api/replicate';
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 min
 
+/**
+ * Replicate's `prediction.urls.get` returns an absolute api.replicate.com URL.
+ * Rewrite it to go through our proxy so polling works the same way.
+ */
+function rewriteReplicateUrl(url: string): string {
+	return url.replace(/^https:\/\/api\.replicate\.com\/v1/, REPLICATE_API);
+}
+
 async function poll(predictionUrl: string, key: string): Promise<Prediction> {
+	const target = rewriteReplicateUrl(predictionUrl);
 	const start = Date.now();
 	while (true) {
-		const res = await fetch(predictionUrl, { headers: { authorization: `Bearer ${key}` } });
+		const res = await fetch(target, { headers: { authorization: `Bearer ${key}` } });
 		if (!res.ok) {
 			const text = await res.text();
 			throw new Error(`Replicate poll failed: ${res.status} ${text.slice(0, 200)}`);
