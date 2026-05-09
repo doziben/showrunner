@@ -12,6 +12,7 @@
 	import { transactionStore } from '$lib/stores/transactions';
 	import { generateAvatarPortraits } from '$lib/pipeline/avatar-image';
 	import { costForAvatarImage } from '$lib/helpers/transactions';
+	import { fmtUsd } from '$lib/helpers/cost';
 	import { fileToBase64 } from '$lib/helpers/image';
 	import { cn } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
@@ -51,6 +52,10 @@
 	let generating = $state(false);
 	let variations = $state<{ base64: string; seed: number }[]>([]);
 	let selectedIndex = $state<number | null>(null);
+	let variationCount = $state<number>(4);
+
+	const VARIATION_OPTIONS = [1, 2, 4, 6, 8];
+	const projectedCost = $derived(costForAvatarImage(variationCount));
 
 	let importPreview = $state<string | null>(null);
 
@@ -67,7 +72,7 @@
 			const results = await generateAvatarPortraits({
 				prompt: description.trim(),
 				apiKey: config.replicateKey,
-				count: 4
+				count: variationCount
 			});
 			variations = results;
 			selectedIndex = 0;

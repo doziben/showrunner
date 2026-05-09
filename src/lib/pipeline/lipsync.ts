@@ -1,61 +1,11 @@
-import { fal } from '@fal-ai/client';
-import { base64ToBlob, urlToBase64 } from '$lib/helpers/image';
 import type { Avatar, Config, LipsyncProvider, Scene } from '$lib/types';
-import { getLipsyncModel } from './lipsync-models';
 
-let cachedFalKey: string | null = null;
-
-function ensureFalConfigured(apiKey: string) {
-	if (cachedFalKey === apiKey) return;
-	// All fal traffic goes through SvelteKit /api/fal/proxy. The client still
-	// signs requests with the user's key — the proxy validates the target host
-	// and forwards.
-	fal.config({ credentials: apiKey, proxyUrl: '/api/fal/proxy' });
-	cachedFalKey = apiKey;
-}
-
-async function uploadToFalStorage(dataUrl: string): Promise<string> {
-	const blob = base64ToBlob(dataUrl);
-	const file = new File([blob], 'asset', { type: blob.type });
-	return await fal.storage.upload(file);
-}
-
-// Routed through SvelteKit /api/replicate/* proxy → https://api.replicate.com/v1/*
-const REPLICATE_API = '/api/replicate';
-const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 5 * 60 * 1000;
-
-function rewriteReplicateUrl(url: string): string {
-	return url.replace(/^https:\/\/api\.replicate\.com\/v1/, REPLICATE_API);
-}
-
-type ReplicatePrediction = {
-	id: string;
-	status: 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
-	output?: string | string[] | null;
-	error?: string | null;
-	urls: { get: string };
-};
-
-async function pollReplicate(predictionUrl: string, key: string): Promise<ReplicatePrediction> {
-	const target = rewriteReplicateUrl(predictionUrl);
-	const start = Date.now();
-	while (true) {
-		const res = await fetch(target, { headers: { authorization: `Bearer ${key}` } });
-		if (!res.ok) {
-			const text = await res.text();
-			throw new Error(`Replicate poll failed: ${res.status} ${text.slice(0, 200)}`);
-		}
-		const data = (await res.json()) as ReplicatePrediction;
-		if (data.status === 'succeeded' || data.status === 'failed' || data.status === 'canceled') {
-			return data;
-		}
-		if (Date.now() - start > POLL_TIMEOUT_MS) {
-			throw new Error('Replicate prediction timed out after 5 minutes');
-		}
-		await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-	}
-}
+/**
+ * Lipsync — runs server-side via /api/lipsync. The endpoint dispatches based
+ * on `provider`:
+ *   - p-video → Replicate (uses x-showrunner-replicate)
+ *   - fabric / aurora → fal.ai (uses x-showrunner-fal)
+ */
 
 export type GenerateLipsyncOptions = {
 	provider: LipsyncProvider;
@@ -66,122 +16,33 @@ export type GenerateLipsyncOptions = {
 	config: Config;
 };
 
-/**
- * Dispatch lipsync to the chosen provider. Returns a base64 data URL of the resulting MP4.
- */
-export async function generateLipsync(opts: GenerateLipsyncOptions): Promise<string> {
-	switch (opts.provider) {
-		case 'p-video':
-			return generateLipsyncPVideo(opts);
-		case 'fabric':
-			return generateLipsyncFabric(opts);
-		case 'aurora':
-			return generateLipsyncAurora(opts);
-		default:
-			throw new Error(`Unknown lipsync provider: ${opts.provider}`);
-	}
-}
-
-/**
- * PrunaAI P-Video on Replicate. Cheapest option. Requires a text prompt; we use the
- * avatar's locked description plus the scene's action so the model has a coherent
- * generation target alongside the image+audio inputs.
- */
-async function generateLipsyncPVideo({
-	avatar,
+export async function generateLipsync({
+	provider,
+	avatar: _avatar,
 	scene,
 	imageDataUrl,
 	audioDataUrl,
 	config
 }: GenerateLipsyncOptions): Promise<string> {
-	const prompt = [
-		avatar.description?.trim(),
-		scene.actionDescription?.trim() ?? 'speaking to camera, natural expression'
-	]
-		.filter(Boolean)
-		.join('. ');
+	const headers: Record<string, string> = { 'content-type': 'application/json' };
+	if (config.replicateKey) headers['x-showrunner-replicate'] = config.replicateKey;
+	if (config.falKey) headers['x-showrunner-fal'] = config.falKey;
 
-	const duration = Math.min(getLipsyncModel('p-video').maxDurationSec, scene.durationSeconds || 5);
-
-	const create = await fetch(`${REPLICATE_API}/models/prunaai/p-video/predictions`, {
+	const res = await fetch('/api/lipsync', {
 		method: 'POST',
-		headers: {
-			authorization: `Bearer ${config.replicateKey}`,
-			'content-type': 'application/json'
-		},
+		headers,
 		body: JSON.stringify({
-			input: {
-				prompt,
-				image: imageDataUrl,
-				audio: audioDataUrl,
-				resolution: '720p',
-				aspect_ratio: '9:16',
-				duration,
-				draft_mode: false
-			}
+			provider,
+			imageDataUrl,
+			audioDataUrl,
+			prompt: scene.actionDescription ?? 'speaking to camera, natural expression',
+			durationSeconds: scene.durationSeconds
 		})
 	});
-	if (!create.ok) {
-		const text = await create.text();
-		throw new Error(`Replicate p-video create failed: ${create.status} ${text.slice(0, 200)}`);
+	if (!res.ok) {
+		const text = await res.text();
+		throw new Error(`Lipsync ${res.status}: ${text.slice(0, 240)}`);
 	}
-	const created = (await create.json()) as ReplicatePrediction;
-	const final = await pollReplicate(created.urls.get, config.replicateKey);
-	if (final.status !== 'succeeded' || !final.output) {
-		throw new Error(final.error ?? `p-video prediction ${created.id} did not succeed`);
-	}
-	const url = Array.isArray(final.output) ? final.output[0] : final.output;
-	return urlToBase64(url);
-}
-
-/**
- * Veed Fabric 1.0 on fal.ai. The default we shipped with — solid middle option.
- */
-async function generateLipsyncFabric({
-	imageDataUrl,
-	audioDataUrl,
-	config
-}: GenerateLipsyncOptions): Promise<string> {
-	ensureFalConfigured(config.falKey);
-
-	const [image_url, audio_url] = await Promise.all([
-		uploadToFalStorage(imageDataUrl),
-		uploadToFalStorage(audioDataUrl)
-	]);
-
-	const result = await fal.subscribe('veed/fabric-1.0', {
-		input: { image_url, audio_url, resolution: '480p' },
-		logs: false
-	});
-
-	const data = result.data as { video?: { url?: string } } | undefined;
-	const videoUrl = data?.video?.url;
-	if (!videoUrl) throw new Error('fal.ai (fabric) response missing video url');
-	return urlToBase64(videoUrl);
-}
-
-/**
- * Creatify Aurora on fal.ai. Highest quality, defaults to 720p.
- */
-async function generateLipsyncAurora({
-	imageDataUrl,
-	audioDataUrl,
-	config
-}: GenerateLipsyncOptions): Promise<string> {
-	ensureFalConfigured(config.falKey);
-
-	const [image_url, audio_url] = await Promise.all([
-		uploadToFalStorage(imageDataUrl),
-		uploadToFalStorage(audioDataUrl)
-	]);
-
-	const result = await fal.subscribe('fal-ai/creatify/aurora', {
-		input: { image_url, audio_url, resolution: '720p' },
-		logs: false
-	});
-
-	const data = result.data as { video?: { url?: string } } | undefined;
-	const videoUrl = data?.video?.url;
-	if (!videoUrl) throw new Error('fal.ai (aurora) response missing video url');
-	return urlToBase64(videoUrl);
+	const { video } = (await res.json()) as { video: string };
+	return video;
 }

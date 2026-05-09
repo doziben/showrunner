@@ -1,86 +1,13 @@
 import type { Avatar } from '$lib/types';
-import { urlToBase64 } from '$lib/helpers/image';
 
 /**
- * Avatar image generation using OpenAI's gpt-image-2 on Replicate.
+ * Avatar image generation — runs server-side via /api/avatars/portraits and
+ * /api/avatars/scene-shot. The server uses the `replicate` npm client with
+ * gpt-image-2 at quality=high.
  *
- * Why gpt-image-2: better identity preservation across edits than Flux for
- * UGC avatars where the same person needs to appear consistently across
- * many scenes. Aspect ratio is capped at 2:3 (closest vertical to UGC's 9:16).
- *
- * Quality is locked to "high" — Showrunner's whole product is the avatar
- * looking like the same real person every time, so we don't try to save
- * pennies on quality here.
+ * The user's Replicate key rides on `x-showrunner-replicate` as a fallback
+ * to the deployer's REPLICATE_API_TOKEN env var.
  */
-
-const MODEL = 'openai/gpt-image-2';
-const QUALITY = 'high' as const;
-const ASPECT_RATIO = '2:3' as const; // closest vertical to 9:16 that this model supports
-
-type Prediction = {
-	id: string;
-	status: 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
-	output?: string | string[] | null;
-	error?: string | null;
-	urls: { get: string; cancel?: string };
-};
-
-// Routed through SvelteKit /api/replicate/* proxy → https://api.replicate.com/v1/*
-const REPLICATE_API = '/api/replicate';
-const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 min
-
-/**
- * Replicate's `prediction.urls.get` returns an absolute api.replicate.com URL.
- * Rewrite it to go through our proxy so polling works the same way.
- */
-function rewriteReplicateUrl(url: string): string {
-	return url.replace(/^https:\/\/api\.replicate\.com\/v1/, REPLICATE_API);
-}
-
-async function poll(predictionUrl: string, key: string): Promise<Prediction> {
-	const target = rewriteReplicateUrl(predictionUrl);
-	const start = Date.now();
-	while (true) {
-		const res = await fetch(target, { headers: { authorization: `Bearer ${key}` } });
-		if (!res.ok) {
-			const text = await res.text();
-			throw new Error(`Replicate poll failed: ${res.status} ${text.slice(0, 200)}`);
-		}
-		const data = (await res.json()) as Prediction;
-		if (data.status === 'succeeded' || data.status === 'failed' || data.status === 'canceled') {
-			return data;
-		}
-		if (Date.now() - start > POLL_TIMEOUT_MS) {
-			throw new Error('Replicate prediction timed out after 5 minutes');
-		}
-		await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-	}
-}
-
-async function createPrediction(
-	model: string,
-	input: Record<string, unknown>,
-	key: string
-): Promise<Prediction> {
-	const res = await fetch(`${REPLICATE_API}/models/${model}/predictions`, {
-		method: 'POST',
-		headers: {
-			authorization: `Bearer ${key}`,
-			'content-type': 'application/json',
-			prefer: 'wait=0'
-		},
-		body: JSON.stringify({ input })
-	});
-	if (!res.ok) {
-		const text = await res.text();
-		throw new Error(`Replicate create failed: ${res.status} ${text.slice(0, 200)}`);
-	}
-	return (await res.json()) as Prediction;
-}
-
-const PORTRAIT_BACKDROP =
-	'Filmed on iPhone in vertical portrait format, natural daylight from a window to the left, slight grain, authentic UGC aesthetic, not overly polished. Sitting at a small wooden desk in a cozy home office. Blurred background shows a plant, a bookshelf, and soft warm lighting. Holding her phone in selfie position at chest level, looking directly into the lens. Medium shot, framed from chest up. No text on screen. Single still frame.';
 
 export type GenerateAvatarOptions = {
 	prompt: string;
@@ -88,52 +15,29 @@ export type GenerateAvatarOptions = {
 	count?: number;
 };
 
-/**
- * Generate N portrait variations from a prompt. Returns base64 data URLs.
- * Uses gpt-image-2 at quality=high for the locked reference image.
- *
- * Note: gpt-image-2 doesn't expose a seed parameter. Variations are produced
- * by issuing N parallel calls — the model's stochasticity gives natural variety.
- */
 export async function generateAvatarPortraits({
 	prompt,
 	apiKey,
 	count = 4
 }: GenerateAvatarOptions): Promise<{ base64: string; seed: number }[]> {
-	const fullPrompt = `${prompt}\n\n${PORTRAIT_BACKDROP}`;
-	const tasks = Array.from({ length: count }, async () => {
-		const created = await createPrediction(
-			MODEL,
-			{
-				prompt: fullPrompt,
-				aspect_ratio: ASPECT_RATIO,
-				quality: QUALITY,
-				output_format: 'png',
-				number_of_images: 1,
-				background: 'auto',
-				moderation: 'auto'
-			},
-			apiKey
-		);
-		const final = await poll(created.urls.get, apiKey);
-		if (final.status !== 'succeeded' || !final.output) {
-			throw new Error(final.error ?? `Prediction ${created.id} did not succeed`);
-		}
-		const url = Array.isArray(final.output) ? final.output[0] : final.output;
-		const base64 = await urlToBase64(url);
-		// Seed is unused for gpt-image-2 but kept on the Avatar type for backwards
-		// compat and possible future model swaps.
-		return { base64, seed: 0 };
+	const res = await fetch('/api/avatars/portraits', {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			'x-showrunner-replicate': apiKey
+		},
+		body: JSON.stringify({ prompt, count })
 	});
-	return Promise.all(tasks);
+	if (!res.ok) {
+		const text = await res.text();
+		throw new Error(`Portraits ${res.status}: ${text.slice(0, 240)}`);
+	}
+	const { images } = (await res.json()) as { images: string[] };
+	// Seed is unused for gpt-image-2 (no seed parameter exposed) but kept on the
+	// Avatar type for backwards compat / possible model swaps.
+	return images.map((base64) => ({ base64, seed: 0 }));
 }
 
-/**
- * Per-scene avatar shot. gpt-image-2's edit mode preserves identity from the
- * reference image extremely well — exactly the property we need for UGC where
- * the same person must appear in every avatar scene. The locked reference is
- * passed via input_images and the prompt describes the new pose / expression.
- */
 export async function generateSceneShot({
 	avatar,
 	prompt,
@@ -143,24 +47,21 @@ export async function generateSceneShot({
 	prompt: string;
 	apiKey: string;
 }): Promise<string> {
-	const created = await createPrediction(
-		MODEL,
-		{
-			prompt,
-			input_images: [avatar.referenceImageBase64],
-			aspect_ratio: ASPECT_RATIO,
-			quality: QUALITY,
-			output_format: 'png',
-			number_of_images: 1,
-			background: 'auto',
-			moderation: 'auto'
+	const res = await fetch('/api/avatars/scene-shot', {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			'x-showrunner-replicate': apiKey
 		},
-		apiKey
-	);
-	const final = await poll(created.urls.get, apiKey);
-	if (final.status !== 'succeeded' || !final.output) {
-		throw new Error(final.error ?? `Scene shot prediction ${created.id} did not succeed`);
+		body: JSON.stringify({
+			prompt,
+			referenceImageBase64: avatar.referenceImageBase64
+		})
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new Error(`Scene shot ${res.status}: ${text.slice(0, 240)}`);
 	}
-	const url = Array.isArray(final.output) ? final.output[0] : final.output;
-	return urlToBase64(url);
+	const { image } = (await res.json()) as { image: string };
+	return image;
 }
