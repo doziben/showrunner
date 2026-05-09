@@ -95,10 +95,10 @@ For a 60-second UGC video with ~30 seconds of avatar footage and the cheapest li
 | Step | Cost |
 | --- | --- |
 | Voiceovers (ElevenLabs) | ~$0.30 |
-| Avatar images (Replicate `gpt-image-2` high) | ~$0.76 (4 avatar scenes × ~$0.19) |
+| Avatar images (Replicate `gpt-image-2` high) | ~$0.51 (4 avatar scenes × $0.128) |
 | Lipsync (P-Video @ $0.02/sec) | ~$0.60 |
 | Storyboard agent | negligible |
-| **Total** | **~$1.66** |
+| **Total** | **~$1.41** |
 
 Showrunner displays the full breakdown — including the projected per-model lipsync cost — *before* you generate, so there are no surprises.
 
