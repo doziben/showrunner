@@ -45,7 +45,7 @@ Concretely, you get:
 | Area | State |
 | --- | --- |
 | Storyboard agent | ✅ Ships with Claude Opus 4.7 via Vercel AI Gateway or Anthropic direct |
-| Avatar generation | ✅ Replicate Flux 1.1 Pro for portraits, Flux Dev img2img for per-scene shots |
+| Avatar generation | ✅ Replicate `openai/gpt-image-2` at `quality=high` for portraits and per-scene shots (edit mode for identity preservation) |
 | Voiceover | ✅ ElevenLabs v3 with audio-tag pass-through |
 | Lipsync | ✅ Three models: PrunaAI P-Video, Veed Fabric 1.0, Creatify Aurora |
 | Bundle export | ✅ Numbered MP4s + MP3s + b-roll markdowns + master README |
@@ -84,7 +84,7 @@ You'll need accounts with:
 | Provider | Used for | Get key |
 | --- | --- | --- |
 | Vercel AI Gateway *(or Anthropic direct)* | Storyboard generation (`claude-opus-4-7`) | <https://vercel.com/docs/ai-gateway> · <https://console.anthropic.com/settings/keys> |
-| Replicate | Avatar image generation (Flux 1.1 Pro / Flux Dev) and the P-Video lipsync model | <https://replicate.com/account/api-tokens> |
+| Replicate | Avatar image generation (`openai/gpt-image-2` @ quality=high) and the P-Video lipsync model | <https://replicate.com/account/api-tokens> |
 | ElevenLabs | Voiceovers (`eleven_v3`) | <https://elevenlabs.io/app/settings/api-keys> |
 | fal.ai | Lipsync (Veed Fabric 1.0, Creatify Aurora) | <https://fal.ai/dashboard/keys> |
 
@@ -95,10 +95,10 @@ For a 60-second UGC video with ~30 seconds of avatar footage and the cheapest li
 | Step | Cost |
 | --- | --- |
 | Voiceovers (ElevenLabs) | ~$0.30 |
-| Avatar images (Replicate Flux) | ~$0.16 |
+| Avatar images (Replicate `gpt-image-2` high) | ~$0.76 (4 avatar scenes × ~$0.19) |
 | Lipsync (P-Video @ $0.02/sec) | ~$0.60 |
 | Storyboard agent | negligible |
-| **Total** | **~$1.06** |
+| **Total** | **~$1.66** |
 
 Showrunner displays the full breakdown — including the projected per-model lipsync cost — *before* you generate, so there are no surprises.
 
@@ -143,8 +143,9 @@ To add a new model: see `src/lib/pipeline/lipsync-models.ts` for the catalog for
                   │                 │
         Voiceover (ElevenLabs)   Voiceover only
                   │                 │
-        Image (Replicate Flux)      │  ← user records
-        img2img w/ locked ref       │     this visual
+        Image (Replicate            │  ← user records
+        gpt-image-2 quality=high,   │     this visual
+        edit mode w/ locked ref)    │
                   │                 │
         Lipsync (P-Video / Fabric / Aurora)
                   │                 │
@@ -181,7 +182,7 @@ Most likely edits, by file:
 | How Claude breaks down scripts | `src/lib/pipeline/prompts.ts` (`STORYBOARD_SYSTEM_PROMPT`) |
 | How avatar shots are framed | `src/lib/pipeline/prompts.ts` (`buildAvatarShotPrompt`) |
 | Lipsync model pricing or add a new model | `src/lib/pipeline/lipsync-models.ts` + `src/lib/pipeline/lipsync.ts` |
-| Image gen model | `src/lib/pipeline/avatar-image.ts` |
+| Image gen model (currently `openai/gpt-image-2` @ quality=high) | `src/lib/pipeline/avatar-image.ts` |
 | Voiceover settings (stability, similarity_boost) | `src/lib/pipeline/voiceover.ts` |
 | Cost estimates | `src/lib/helpers/cost.ts` (`PRICING`) |
 | Tailwind tokens, theme | `src/app.css` |
@@ -202,7 +203,7 @@ src/
 │   ├── pipeline/                  # Provider integrations + orchestrator
 │   │   ├── prompts.ts             # Storyboard + avatar shot prompts (§6, §7)
 │   │   ├── storyboard.ts          # Claude via @ai-sdk/gateway or @ai-sdk/anthropic
-│   │   ├── avatar-image.ts        # Replicate Flux portraits + per-scene img2img
+│   │   ├── avatar-image.ts        # Replicate openai/gpt-image-2 (quality=high) + per-scene edit
 │   │   ├── voiceover.ts           # ElevenLabs v3 TTS
 │   │   ├── lipsync.ts             # Dispatcher: p-video / fabric / aurora
 │   │   ├── lipsync-models.ts      # Model catalog (label, rate, max duration)

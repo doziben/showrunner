@@ -4,10 +4,14 @@ import { getLipsyncModel, DEFAULT_LIPSYNC_PROVIDER } from '$lib/pipeline/lipsync
 /**
  * Per-provider unit pricing (USD). Conservative estimates.
  * Voiceover + image are constant; lipsync depends on the chosen model.
+ *
+ * Image price reflects gpt-image-2 at quality=high, 2:3 portrait (~$0.19/image
+ * based on the OpenAI rate Replicate passes through). Update when published
+ * Replicate pricing diverges.
  */
 export const PRICING = {
 	voiceoverPerMinute: 0.3, // ElevenLabs ~$0.30 / min spoken
-	imagePerShot: 0.04 // Replicate Flux 1.1 Pro / Flux Dev
+	imagePerShot: 0.19 // Replicate openai/gpt-image-2 @ quality=high, 2:3
 };
 
 export type CostBreakdown = {

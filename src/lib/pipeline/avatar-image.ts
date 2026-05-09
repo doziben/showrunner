@@ -1,7 +1,22 @@
 import type { Avatar } from '$lib/types';
 import { urlToBase64 } from '$lib/helpers/image';
 
-/** Replicate prediction lifecycle. */
+/**
+ * Avatar image generation using OpenAI's gpt-image-2 on Replicate.
+ *
+ * Why gpt-image-2: better identity preservation across edits than Flux for
+ * UGC avatars where the same person needs to appear consistently across
+ * many scenes. Aspect ratio is capped at 2:3 (closest vertical to UGC's 9:16).
+ *
+ * Quality is locked to "high" — Showrunner's whole product is the avatar
+ * looking like the same real person every time, so we don't try to save
+ * pennies on quality here.
+ */
+
+const MODEL = 'openai/gpt-image-2';
+const QUALITY = 'high' as const;
+const ASPECT_RATIO = '2:3' as const; // closest vertical to 9:16 that this model supports
+
 type Prediction = {
 	id: string;
 	status: 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
@@ -55,37 +70,38 @@ async function createPrediction(
 }
 
 const PORTRAIT_BACKDROP =
-	'Filmed on iPhone in vertical 9:16 format, natural daylight from a window to the left, slight grain, authentic UGC aesthetic, not overly polished. Sitting at a small wooden desk in a cozy home office. Blurred background shows a plant, a bookshelf, and soft warm lighting. Holding her phone in selfie position at chest level, looking directly into the lens. Medium shot, framed from chest up. No text on screen. Single still frame.';
+	'Filmed on iPhone in vertical portrait format, natural daylight from a window to the left, slight grain, authentic UGC aesthetic, not overly polished. Sitting at a small wooden desk in a cozy home office. Blurred background shows a plant, a bookshelf, and soft warm lighting. Holding her phone in selfie position at chest level, looking directly into the lens. Medium shot, framed from chest up. No text on screen. Single still frame.';
 
 export type GenerateAvatarOptions = {
 	prompt: string;
 	apiKey: string;
 	count?: number;
-	model?: string;
 };
 
 /**
  * Generate N portrait variations from a prompt. Returns base64 data URLs.
- * Uses flux-1.1-pro by default (best identity quality for the locked reference).
+ * Uses gpt-image-2 at quality=high for the locked reference image.
+ *
+ * Note: gpt-image-2 doesn't expose a seed parameter. Variations are produced
+ * by issuing N parallel calls — the model's stochasticity gives natural variety.
  */
 export async function generateAvatarPortraits({
 	prompt,
 	apiKey,
-	count = 4,
-	model = 'black-forest-labs/flux-1.1-pro'
+	count = 4
 }: GenerateAvatarOptions): Promise<{ base64: string; seed: number }[]> {
 	const fullPrompt = `${prompt}\n\n${PORTRAIT_BACKDROP}`;
 	const tasks = Array.from({ length: count }, async () => {
-		const seed = Math.floor(Math.random() * 2_000_000_000);
 		const created = await createPrediction(
-			model,
+			MODEL,
 			{
 				prompt: fullPrompt,
-				aspect_ratio: '9:16',
+				aspect_ratio: ASPECT_RATIO,
+				quality: QUALITY,
 				output_format: 'png',
-				safety_tolerance: 2,
-				prompt_upsampling: true,
-				seed
+				number_of_images: 1,
+				background: 'auto',
+				moderation: 'auto'
 			},
 			apiKey
 		);
@@ -95,36 +111,39 @@ export async function generateAvatarPortraits({
 		}
 		const url = Array.isArray(final.output) ? final.output[0] : final.output;
 		const base64 = await urlToBase64(url);
-		return { base64, seed };
+		// Seed is unused for gpt-image-2 but kept on the Avatar type for backwards
+		// compat and possible future model swaps.
+		return { base64, seed: 0 };
 	});
 	return Promise.all(tasks);
 }
 
 /**
- * For per-scene shots (used in Phase 6). Uses flux-dev img2img with low denoising
- * to preserve identity from the locked reference.
+ * Per-scene avatar shot. gpt-image-2's edit mode preserves identity from the
+ * reference image extremely well — exactly the property we need for UGC where
+ * the same person must appear in every avatar scene. The locked reference is
+ * passed via input_images and the prompt describes the new pose / expression.
  */
 export async function generateSceneShot({
 	avatar,
 	prompt,
-	apiKey,
-	model = 'black-forest-labs/flux-dev'
+	apiKey
 }: {
 	avatar: Avatar;
 	prompt: string;
 	apiKey: string;
-	model?: string;
 }): Promise<string> {
 	const created = await createPrediction(
-		model,
+		MODEL,
 		{
 			prompt,
-			image: avatar.referenceImageBase64,
-			prompt_strength: 0.55,
-			aspect_ratio: '9:16',
+			input_images: [avatar.referenceImageBase64],
+			aspect_ratio: ASPECT_RATIO,
+			quality: QUALITY,
 			output_format: 'png',
-			num_inference_steps: 28,
-			seed: avatar.seed
+			number_of_images: 1,
+			background: 'auto',
+			moderation: 'auto'
 		},
 		apiKey
 	);
