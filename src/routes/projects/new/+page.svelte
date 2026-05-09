@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import ScriptEditor from '$lib/components/ScriptEditor.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { configStore } from '$lib/stores/config';
@@ -124,12 +125,11 @@
 						<Label class="text-[11px] font-medium text-muted-foreground">Script</Label>
 						<span class="text-[11px] tabular-nums text-muted-foreground">{wordCount} words</span>
 					</div>
-					<Textarea
+					<ScriptEditor
 						value={script}
-						oninput={(e) => (script = (e.target as HTMLTextAreaElement).value)}
+						onChange={(v) => (script = v)}
 						placeholder={`[confident] Most businesses are using AI for content the wrong way.\n\n[slightly mocking] They open ChatGPT, type "give me content ideas for my brand", and get back the same generic list...`}
 						rows={20}
-						class="resize-y font-mono text-[12px] leading-relaxed"
 					/>
 					<p class="text-[11px] text-muted-foreground">
 						ElevenLabs v3 audio tags like <code class="rounded bg-muted px-1 font-mono">[confident]</code>
