@@ -3,6 +3,11 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { configStore } from '$lib/stores/config';
+	import { avatarStore } from '$lib/stores/avatars';
+	import { projectStore } from '$lib/stores/projects';
+	import { transactionStore } from '$lib/stores/transactions';
+	import { jobStore } from '$lib/stores/jobs';
+	import { db } from '$lib/db';
 	import ApiKeyInput from '$lib/components/ApiKeyInput.svelte';
 	import VoiceRow from '$lib/components/VoiceRow.svelte';
 	import {
@@ -30,6 +35,8 @@
 	let modelKeyResult = $state<TestResult | null>(null);
 	let saving = $state(false);
 	let confirmingReset = $state(false);
+	let confirmingWipe = $state(false);
+	let wipeConfirmText = $state('');
 
 	let initialized = $state(false);
 	$effect(() => {
@@ -90,6 +97,34 @@
 		await configStore.clear();
 		confirmingReset = false;
 		toast.success('Configuration cleared. Re-running onboarding.');
+		window.location.href = '/onboarding';
+	}
+
+	async function wipeAllData() {
+		// Single transaction across all four stores so it's atomic.
+		await db.transaction(
+			'rw',
+			[db.config, db.avatars, db.projects, db.transactions],
+			async () => {
+				await Promise.all([
+					db.config.clear(),
+					db.avatars.clear(),
+					db.projects.clear(),
+					db.transactions.clear()
+				]);
+			}
+		);
+		jobStore.reset();
+		// Refresh in-memory stores so the UI matches.
+		await Promise.all([
+			configStore.load(),
+			avatarStore.load(),
+			projectStore.load(),
+			transactionStore.load()
+		]);
+		confirmingWipe = false;
+		wipeConfirmText = '';
+		toast.success('All local data wiped.');
 		window.location.href = '/onboarding';
 	}
 </script>
@@ -209,35 +244,103 @@
 					</div>
 				</section>
 
-				<section class="flex items-center justify-between border-t border-border pt-6">
-					<div>
-						<h3 class="text-[13px] font-medium">Reset configuration</h3>
+				<section class="flex flex-col gap-3 border-t border-border pt-6">
+					<header class="border-b border-border pb-3">
+						<h2 class="text-[15px] font-medium text-destructive">Danger zone</h2>
 						<p class="mt-1 text-[12px] text-muted-foreground">
-							Clear API keys and voices. Avatars and projects stay.
+							Destructive, irreversible actions. None of these contact your providers — only the
+							local browser store is touched.
 						</p>
+					</header>
+
+					<div class="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+						<div>
+							<h3 class="text-[13px] font-medium">Reset configuration</h3>
+							<p class="mt-0.5 text-[12px] text-muted-foreground">
+								Clear API keys and voices. Avatars, projects, and usage stay.
+							</p>
+						</div>
+						<Dialog.Root bind:open={confirmingReset}>
+							<Dialog.Trigger>
+								{#snippet child({ props })}
+									<Button variant="outline" size="sm" class="h-8 text-destructive" {...props}>
+										Reset
+									</Button>
+								{/snippet}
+							</Dialog.Trigger>
+							<Dialog.Content>
+								<Dialog.Header>
+									<Dialog.Title>Wipe configuration?</Dialog.Title>
+									<Dialog.Description>
+										Clears your API keys and voice library. Avatars and projects stay.
+									</Dialog.Description>
+								</Dialog.Header>
+								<Dialog.Footer>
+									<Button variant="ghost" size="sm" onclick={() => (confirmingReset = false)}>Cancel</Button>
+									<Button variant="destructive" size="sm" onclick={resetEverything}>Reset</Button>
+								</Dialog.Footer>
+							</Dialog.Content>
+						</Dialog.Root>
 					</div>
-					<Dialog.Root bind:open={confirmingReset}>
-						<Dialog.Trigger>
-							{#snippet child({ props })}
-								<Button variant="outline" size="sm" class="h-8 text-destructive" {...props}>
-									<HIcon name="delete-02" class="h-3.5 w-3.5" />
-									Reset
-								</Button>
-							{/snippet}
-						</Dialog.Trigger>
-						<Dialog.Content>
-							<Dialog.Header>
-								<Dialog.Title>Wipe configuration?</Dialog.Title>
-								<Dialog.Description>
-									This clears your API keys and voice library. Avatars and projects stay.
-								</Dialog.Description>
-							</Dialog.Header>
-							<Dialog.Footer>
-								<Button variant="ghost" size="sm" onclick={() => (confirmingReset = false)}>Cancel</Button>
-								<Button variant="destructive" size="sm" onclick={resetEverything}>Reset</Button>
-							</Dialog.Footer>
-						</Dialog.Content>
-					</Dialog.Root>
+
+					<div class="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
+						<div>
+							<h3 class="text-[13px] font-medium text-destructive">Wipe all local data</h3>
+							<p class="mt-0.5 text-[12px] text-muted-foreground">
+								Deletes everything: API keys, voices, avatars, projects, generated outputs, and
+								the entire usage log.
+							</p>
+						</div>
+						<Dialog.Root
+							bind:open={confirmingWipe}
+							onOpenChange={(open) => {
+								if (!open) wipeConfirmText = '';
+							}}
+						>
+							<Dialog.Trigger>
+								{#snippet child({ props })}
+									<Button variant="destructive" size="sm" class="h-8" {...props}>
+										<HIcon name="delete-02" class="h-3.5 w-3.5" />
+										Wipe everything
+									</Button>
+								{/snippet}
+							</Dialog.Trigger>
+							<Dialog.Content>
+								<Dialog.Header>
+									<Dialog.Title>Wipe all local data?</Dialog.Title>
+									<Dialog.Description>
+										This permanently deletes API keys, voices, avatars, projects (including
+										generated audio, images, and lipsync videos), and the full usage log. There
+										is no undo.
+									</Dialog.Description>
+								</Dialog.Header>
+								<div class="space-y-2 py-2">
+									<p class="text-[12px] text-muted-foreground">
+										Type <span class="font-mono text-foreground">wipe</span> to confirm.
+									</p>
+									<input
+										type="text"
+										bind:value={wipeConfirmText}
+										autocomplete="off"
+										spellcheck={false}
+										class="h-9 w-full rounded-lg border border-border bg-input px-3 font-mono text-[13px] text-foreground focus:border-destructive focus:outline-none"
+										placeholder="wipe"
+									/>
+								</div>
+								<Dialog.Footer>
+									<Button variant="ghost" size="sm" onclick={() => (confirmingWipe = false)}>Cancel</Button>
+									<Button
+										variant="destructive"
+										size="sm"
+										disabled={wipeConfirmText.trim().toLowerCase() !== 'wipe'}
+										onclick={wipeAllData}
+									>
+										Wipe everything
+									</Button>
+								</Dialog.Footer>
+							</Dialog.Content>
+						</Dialog.Root>
+					</div>
 				</section>
 			</div>
 		</div>
