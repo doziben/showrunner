@@ -216,6 +216,36 @@
 							</div>
 						</div>
 
+						<div class="flex flex-col gap-2 rounded-lg border border-border bg-background/40 p-3">
+							<div class="flex items-center justify-between">
+								<Label class="text-[11px] font-medium text-muted-foreground">
+									Variations
+								</Label>
+								<span class="text-[11px] tabular-nums text-muted-foreground">
+									{fmtUsd(projectedCost)} per run
+								</span>
+							</div>
+							<div class="flex items-center gap-1 self-start rounded-md border border-border bg-card p-0.5">
+								{#each VARIATION_OPTIONS as n}
+									<button
+										type="button"
+										onclick={() => (variationCount = n)}
+										class={cn(
+											'h-7 min-w-[36px] rounded px-2.5 text-[12px] tabular-nums transition-colors',
+											variationCount === n
+												? 'bg-foreground text-background'
+												: 'text-muted-foreground hover:text-foreground'
+										)}
+									>
+										{n}
+									</button>
+								{/each}
+							</div>
+							<p class="text-[11px] leading-relaxed text-muted-foreground">
+								More candidates to pick from. You only lock one as the reference.
+							</p>
+						</div>
+
 						<Button
 							size="sm"
 							class="h-8 self-start"
@@ -224,10 +254,10 @@
 						>
 							{#if generating}
 								<HIcon name="loading-03" class="h-3.5 w-3.5 animate-spin" />
-								Generating 4 variations
+								Generating {variationCount} {variationCount === 1 ? 'variation' : 'variations'}
 							{:else}
 								<HIcon name="sparkles" class="h-3.5 w-3.5" />
-								Generate avatar
+								Generate {variationCount} {variationCount === 1 ? 'variation' : 'variations'}
 							{/if}
 						</Button>
 
@@ -261,7 +291,7 @@
 							</div>
 						{:else if generating}
 							<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-								{#each Array(4) as _, i}
+								{#each Array(variationCount) as _, i}
 									<div class="aspect-[4/5] animate-pulse rounded-lg bg-muted"></div>
 								{/each}
 							</div>
