@@ -324,7 +324,7 @@
 								/>
 								<div class="flex flex-col justify-center text-[11px] leading-relaxed text-muted-foreground">
 									<p class="font-medium text-foreground/80">Default setup</p>
-									<p>{selectedAvatar.environmentDescription}</p>
+									<p>Reuses {selectedAvatar.name}'s reference image as-is.</p>
 								</div>
 							{:else if variantPreview}
 								<img

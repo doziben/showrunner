@@ -1,6 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Avatar, Config, Project, Transaction } from '$lib/types';
-import { DEFAULT_ENVIRONMENT_DESCRIPTION } from '$lib/pipeline/prompts';
 
 const LEGACY_FRAMING_MAP: Record<string, string> = {
 	medium: 'medium_direct',
@@ -44,8 +43,8 @@ class ShowrunnerDB extends Dexie {
 				const projectsTable = tx.table('projects');
 
 				await avatarsTable.toCollection().modify((a: Avatar) => {
-					if (typeof a.environmentDescription !== 'string' || !a.environmentDescription) {
-						a.environmentDescription = DEFAULT_ENVIRONMENT_DESCRIPTION;
+					if (typeof a.environmentDescription !== 'string') {
+						a.environmentDescription = '';
 					}
 					if (!Array.isArray(a.recentEnvironments)) {
 						a.recentEnvironments = [];
@@ -57,7 +56,7 @@ class ShowrunnerDB extends Dexie {
 
 				await projectsTable.toCollection().modify((p: Project) => {
 					const avatar = avatarsById.get(p.avatarId);
-					const fallbackEnv = avatar?.environmentDescription ?? DEFAULT_ENVIRONMENT_DESCRIPTION;
+					const fallbackEnv = avatar?.environmentDescription ?? '';
 					const fallbackRef = avatar?.referenceImageBase64 ?? '';
 
 					if (!p.avatarVariantMode) p.avatarVariantMode = 'default';

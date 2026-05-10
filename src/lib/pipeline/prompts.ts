@@ -1,14 +1,6 @@
 import type { Avatar, Framing, Scene } from '$lib/types';
 
 /**
- * The fallback environment description for avatars created before the
- * environmentDescription field existed (and the legacy hardcoded look).
- * Also used as the v3 migration backfill.
- */
-export const DEFAULT_ENVIRONMENT_DESCRIPTION =
-	'Cream sweatshirt, sitting at a small wooden desk in a cozy home office, plant and bookshelf blurred in the background, natural daylight from a window to her left, soft warm lighting.';
-
-/**
  * Map of framing values to camera/pose instructions injected into the
  * per-scene avatar prompt. New framings must be added here and to the
  * Framing union in $lib/types — a typo silently falls back to medium_direct.
@@ -139,9 +131,9 @@ Now process the user's script.`;
 /**
  * Per-scene avatar shot prompt builder.
  *
- * `environmentDescription` is the project's locked outfit + room + lighting —
- * usually `project.avatarVariantDescription`, falling back to the avatar's
- * original `environmentDescription` for default-mode projects.
+ * `environmentDescription` is the project's locked outfit + room + lighting,
+ * set by Custom or Random variant modes. Default-mode projects pass an empty
+ * string — the reference image alone carries the look, so we omit the clause.
  */
 export function buildAvatarShotPrompt(
 	avatar: Avatar,
@@ -151,13 +143,14 @@ export function buildAvatarShotPrompt(
 	const framingInstruction =
 		(scene.framing && FRAMING_DESCRIPTIONS[scene.framing]) ?? FRAMING_DESCRIPTIONS.medium_direct;
 
-	const env = environmentDescription || avatar.environmentDescription || DEFAULT_ENVIRONMENT_DESCRIPTION;
+	const env = (environmentDescription || avatar.environmentDescription || '').trim();
+	const envClause = env ? ` ${env}` : '';
 
 	return `${avatar.description}
 
 She is ${scene.actionDescription ?? 'mid-conversation, natural expressive energy'}
 
-Filmed on iPhone in vertical 9:16 format, natural daylight, slight grain, authentic UGC aesthetic, not overly polished. ${env}
+Filmed on iPhone in vertical 9:16 format, natural daylight, slight grain, authentic UGC aesthetic, not overly polished.${envClause}
 
 ${framingInstruction}
 

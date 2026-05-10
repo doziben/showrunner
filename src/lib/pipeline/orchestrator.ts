@@ -6,7 +6,7 @@ import type { Avatar, Config, LipsyncProvider, Project, Scene } from '$lib/types
 import { generateVoiceover } from './voiceover';
 import { generateSceneShot } from './avatar-image';
 import { generateLipsync } from './lipsync';
-import { buildAvatarShotPrompt, DEFAULT_ENVIRONMENT_DESCRIPTION } from './prompts';
+import { buildAvatarShotPrompt } from './prompts';
 import { LIPSYNC_MODELS } from './lipsync-models';
 import {
 	costForAvatarImage,
@@ -22,9 +22,7 @@ type RunContext = {
 
 function projectVariantRef(project: Project | undefined, avatar: Avatar) {
 	const description =
-		project?.avatarVariantDescription ||
-		avatar.environmentDescription ||
-		DEFAULT_ENVIRONMENT_DESCRIPTION;
+		project?.avatarVariantDescription || avatar.environmentDescription || '';
 	const referenceImage = project?.avatarVariantReferenceImage || avatar.referenceImageBase64;
 	return { description, referenceImage };
 }
