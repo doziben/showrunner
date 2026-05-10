@@ -25,7 +25,7 @@
 			type="button"
 			onclick={() => onChange(id)}
 			class={cn(
-				'group flex flex-col gap-1 rounded-lg border bg-card px-3 py-2.5 text-left transition-all',
+				'group flex flex-col gap-1 rounded-lg  px-3 py-2.5 text-left transition-all',
 				selected
 					? 'border-foreground/70 ring-1 ring-foreground/20'
 					: 'border-border hover:border-border-strong'
