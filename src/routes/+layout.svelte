@@ -67,8 +67,11 @@
 		$projectStore.projects.some((p) => p.status === 'generating')
 	);
 
-	let lastStatuses = $state<Record<string, string>>({});
-	let initializedStatuses = $state(false);
+	// Plain locals — these are bookkeeping for the effect below and must not
+	// be reactive, otherwise reading + writing them in the same effect causes
+	// effect_update_depth_exceeded.
+	let lastStatuses: Record<string, string> = {};
+	let initializedStatuses = false;
 
 	$effect(() => {
 		if (!booted) return;
