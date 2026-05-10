@@ -9,7 +9,14 @@
 	import { projectStore } from '$lib/stores/projects';
 	import { transactionStore } from '$lib/stores/transactions';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import TopProgressBar from '$lib/components/TopProgressBar.svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
+	import {
+		ensureNotificationPermission,
+		playFailurePing,
+		playSuccessPing,
+		showSystemNotification
+	} from '$lib/helpers/notify';
 
 	let { children } = $props();
 
@@ -48,9 +55,67 @@
 	});
 
 	const showShell = $derived(booted && !isPublic(page.url.pathname));
+
+	/* ──────────────────────────────────────────────────────────────────────
+	 * Generation progress + completion notify.
+	 * Watches the project store for transitions out of 'generating' and
+	 * triggers the ping + system notification. Drives the top progress bar
+	 * off any project currently in 'generating'.
+	 * ────────────────────────────────────────────────────────────────────── */
+
+	const anyGenerating = $derived(
+		$projectStore.projects.some((p) => p.status === 'generating')
+	);
+
+	let lastStatuses = $state<Record<string, string>>({});
+	let initializedStatuses = $state(false);
+
+	$effect(() => {
+		if (!booted) return;
+		const projects = $projectStore.projects;
+
+		// Snapshot statuses once after first load — anything in 'generating'
+		// at boot might just be a stale flag, don't notify on initial load.
+		if (!initializedStatuses) {
+			const snapshot: Record<string, string> = {};
+			for (const p of projects) snapshot[p.id] = p.status;
+			lastStatuses = snapshot;
+			initializedStatuses = true;
+			return;
+		}
+
+		const next: Record<string, string> = { ...lastStatuses };
+		for (const p of projects) {
+			const prev = lastStatuses[p.id];
+			next[p.id] = p.status;
+
+			if (prev === 'generating') {
+				if (p.status === 'complete') {
+					playSuccessPing();
+					showSystemNotification(
+						'Showrunner — generation complete',
+						`${p.name} finished. ${p.scenes.length} scene${p.scenes.length === 1 ? '' : 's'} ready.`
+					);
+				} else if (p.status === 'failed') {
+					playFailurePing();
+					showSystemNotification(
+						'Showrunner — generation finished with errors',
+						`${p.name} hit one or more failed scenes. Click Retry on any failed card.`
+					);
+				}
+			} else if (prev !== 'generating' && p.status === 'generating') {
+				// First time we see this project go to generating — request
+				// notification permission lazily so the prompt rides on the user's
+				// click, not on app boot.
+				void ensureNotificationPermission();
+			}
+		}
+		lastStatuses = next;
+	});
 </script>
 
 <Toaster theme="dark" position="bottom-right" />
+<TopProgressBar active={anyGenerating} />
 
 {#if !booted}
 	<div class="flex h-screen items-center justify-center bg-background">
