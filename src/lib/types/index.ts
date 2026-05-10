@@ -23,14 +23,27 @@ export interface Avatar {
 	id: string;
 	name: string;
 	description: string;
+	/** The locked outfit + room + lighting for the avatar's original reference image. */
+	environmentDescription: string;
 	referenceImageBase64: string;
 	voiceId: string;
 	seed?: number;
 	createdAt: number;
+	/** Last 5 environment descriptions used across this avatar's projects (for the "random" variant). */
+	recentEnvironments?: string[];
 }
 
+export type AvatarVariantMode = 'default' | 'custom' | 'random';
+
 export type SceneType = 'avatar' | 'broll';
-export type Framing = 'medium' | 'close-up' | 'wide';
+export type Framing =
+	| 'medium_direct'
+	| 'close-up_direct'
+	| 'medium_off-axis'
+	| 'low_angle'
+	| 'high_angle'
+	| 'leaning_forward'
+	| 'leaning_back';
 
 export type SceneStatus =
 	| 'pending'
@@ -103,6 +116,12 @@ export interface Project {
 	status: ProjectStatus;
 	/** Optional for backwards-compat with projects created before the picker shipped. */
 	lipsyncProvider?: LipsyncProvider;
+	/** Which avatar variant this project uses for its scene shots. */
+	avatarVariantMode: AvatarVariantMode;
+	/** The actual environment description in use for this project (for default mode this is a copy of avatar.environmentDescription). */
+	avatarVariantDescription: string;
+	/** The freshly generated reference image for this project's setup. For default mode this is a copy of avatar.referenceImageBase64. */
+	avatarVariantReferenceImage: string;
 	createdAt: number;
 	updatedAt: number;
 }

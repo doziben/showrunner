@@ -73,7 +73,7 @@
 			audioLine: '',
 			durationSeconds: 4,
 			actionDescription: '',
-			framing: 'medium',
+			framing: 'medium_direct',
 			status: 'pending'
 		};
 		await projectStore.setScenes(project.id, [...project.scenes, newScene]);

@@ -11,6 +11,7 @@
 	import { avatarStore } from '$lib/stores/avatars';
 	import { transactionStore } from '$lib/stores/transactions';
 	import { generateAvatarPortraits } from '$lib/pipeline/avatar-image';
+	import { DEFAULT_ENVIRONMENT_DESCRIPTION } from '$lib/pipeline/prompts';
 	import { costForAvatarImage } from '$lib/helpers/transactions';
 	import { fmtUsd } from '$lib/helpers/cost';
 	import { fileToBase64 } from '$lib/helpers/image';
@@ -23,6 +24,7 @@
 
 	let name = $state('');
 	let description = $state('');
+	let environmentDescription = $state(DEFAULT_ENVIRONMENT_DESCRIPTION);
 	let voiceId = $state('');
 
 	$effect(() => {
@@ -145,9 +147,12 @@
 			const created = await avatarStore.create({
 				name: name.trim(),
 				description: savedDescription,
+				environmentDescription:
+					environmentDescription.trim() || DEFAULT_ENVIRONMENT_DESCRIPTION,
 				referenceImageBase64,
 				voiceId,
-				seed
+				seed,
+				recentEnvironments: []
 			});
 			toast.success('Avatar created');
 			await goto(`/avatars/${created.id}`);
@@ -358,6 +363,22 @@
 						<a href="/settings" class="text-foreground/80 underline-offset-4 hover:underline"
 							>Settings</a
 						>.
+					</p>
+				</div>
+
+				<div class="space-y-1.5">
+					<Label class="text-[11px] font-medium text-muted-foreground">Default setup</Label>
+					<Textarea
+						value={environmentDescription}
+						oninput={(e) =>
+							(environmentDescription = (e.target as HTMLTextAreaElement).value)}
+						placeholder="cream sweatshirt, cozy home office, plant in background, sunny daylight"
+						rows={4}
+						class="text-[12px] leading-relaxed"
+					/>
+					<p class="text-[11px] leading-relaxed text-muted-foreground">
+						Outfit + room + lighting in the reference image. Reused as the default for every new
+						project — projects can override with custom or random setups.
 					</p>
 				</div>
 			</aside>

@@ -2,11 +2,11 @@ import { db } from '$lib/db';
 import { projectStore } from '$lib/stores/projects';
 import { transactionStore } from '$lib/stores/transactions';
 import { jobStore, type Job, type JobKind } from '$lib/stores/jobs';
-import type { Avatar, Config, LipsyncProvider, Scene } from '$lib/types';
+import type { Avatar, Config, LipsyncProvider, Project, Scene } from '$lib/types';
 import { generateVoiceover } from './voiceover';
 import { generateSceneShot } from './avatar-image';
 import { generateLipsync } from './lipsync';
-import { buildAvatarShotPrompt } from './prompts';
+import { buildAvatarShotPrompt, DEFAULT_ENVIRONMENT_DESCRIPTION } from './prompts';
 import { LIPSYNC_MODELS } from './lipsync-models';
 import {
 	costForAvatarImage,
@@ -19,6 +19,15 @@ type RunContext = {
 	config: Config;
 	avatar: Avatar;
 };
+
+function projectVariantRef(project: Project | undefined, avatar: Avatar) {
+	const description =
+		project?.avatarVariantDescription ||
+		avatar.environmentDescription ||
+		DEFAULT_ENVIRONMENT_DESCRIPTION;
+	const referenceImage = project?.avatarVariantReferenceImage || avatar.referenceImageBase64;
+	return { description, referenceImage };
+}
 
 const SCENE_CONCURRENCY = 2; // hammer providers gently
 const MAX_ATTEMPTS = 3;
@@ -131,9 +140,15 @@ async function runScene(projectId: string, sceneId: string, ctx: RunContext): Pr
 	const imgJob = trackJob(projectId, sceneId, 'avatar-image');
 	let avatarImageBase64: string;
 	try {
-		const prompt = buildAvatarShotPrompt(ctx.avatar, fresh);
+		const project = await db.projects.get(projectId);
+		const variant = projectVariantRef(project, ctx.avatar);
+		const prompt = buildAvatarShotPrompt(ctx.avatar, fresh, variant.description);
 		avatarImageBase64 = await withRetry('avatar-image', () =>
-			generateSceneShot({ avatar: ctx.avatar, prompt, apiKey: ctx.config.replicateKey })
+			generateSceneShot({
+				prompt,
+				referenceImageBase64: variant.referenceImage,
+				apiKey: ctx.config.replicateKey
+			})
 		);
 		finishJob(imgJob, 'success');
 		await transactionStore.record({

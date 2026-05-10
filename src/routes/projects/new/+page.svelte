@@ -14,9 +14,12 @@
 	import { transactionStore } from '$lib/stores/transactions';
 	import { generateStoryboard } from '$lib/pipeline/storyboard';
 	import { DEFAULT_LIPSYNC_PROVIDER } from '$lib/pipeline/lipsync-models';
-	import { costForStoryboard } from '$lib/helpers/transactions';
+	import { costForStoryboard, costForAvatarImage } from '$lib/helpers/transactions';
+	import { fmtUsd } from '$lib/helpers/cost';
 	import LipsyncModelPicker from '$lib/components/LipsyncModelPicker.svelte';
-	import type { LipsyncProvider } from '$lib/types';
+	import type { AvatarVariantMode, LipsyncProvider } from '$lib/types';
+	import { generateAvatarVariant } from '$lib/pipeline/avatar-image';
+	import { cn } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
 	import HIcon from '$lib/components/HIcon.svelte';
 
@@ -29,13 +32,103 @@
 	let generating = $state(false);
 	let lipsyncProvider = $state<LipsyncProvider>(DEFAULT_LIPSYNC_PROVIDER);
 
+	let variantMode = $state<AvatarVariantMode>('default');
+	let customVariantText = $state('');
+	let variantPreview = $state<{
+		mode: AvatarVariantMode;
+		environmentDescription: string;
+		referenceImageBase64: string;
+		avatarId: string;
+	} | null>(null);
+	let previewing = $state(false);
+
 	$effect(() => {
 		if (!avatarId && avatars.length > 0) avatarId = avatars[0].id;
+	});
+
+	// Reset the variant preview if the user switches avatar or mode.
+	$effect(() => {
+		if (variantPreview && variantPreview.avatarId !== avatarId) {
+			variantPreview = null;
+		}
+	});
+	$effect(() => {
+		if (variantPreview && variantPreview.mode !== variantMode) {
+			variantPreview = null;
+		}
 	});
 
 	const selectedAvatar = $derived(avatars.find((a) => a.id === avatarId));
 	const selectedAvatarLabel = $derived(selectedAvatar?.name ?? 'Pick an avatar');
 	const wordCount = $derived(script.trim().split(/\s+/).filter(Boolean).length);
+	const variantPreviewCost = $derived(costForAvatarImage(1));
+
+	const variantOptions = $derived([
+		{
+			id: 'default' as AvatarVariantMode,
+			label: 'Default',
+			hint: selectedAvatar
+				? `Reuse ${selectedAvatar.name}'s original outfit and room.`
+				: "Reuse the avatar's original outfit and room."
+		},
+		{
+			id: 'custom' as AvatarVariantMode,
+			label: 'Custom',
+			hint: 'Describe a new outfit + environment.'
+		},
+		{
+			id: 'random' as AvatarVariantMode,
+			label: 'Random',
+			hint: 'AI picks a fresh setup, avoiding recent ones.'
+		}
+	]);
+
+	async function previewVariant() {
+		if (!config || !selectedAvatar) {
+			toast.error('Pick an avatar first');
+			return;
+		}
+		if (variantMode === 'custom' && !customVariantText.trim()) {
+			toast.error('Describe the custom setup first');
+			return;
+		}
+		previewing = true;
+		try {
+			const result = await generateAvatarVariant({
+				avatar: selectedAvatar,
+				mode: variantMode,
+				customDescription: customVariantText,
+				config
+			});
+			variantPreview = {
+				mode: variantMode,
+				environmentDescription: result.environmentDescription,
+				referenceImageBase64: result.referenceImageBase64,
+				avatarId: selectedAvatar.id
+			};
+			if (variantMode !== 'default') {
+				await transactionStore.record({
+					avatarId: selectedAvatar.id,
+					kind: 'avatar-shot',
+					provider: 'replicate',
+					model: 'openai/gpt-image-2',
+					quantity: 1,
+					unit: 'images',
+					costUsd: costForAvatarImage(1),
+					status: 'success',
+					notes: `variant preview · ${variantMode}`
+				});
+			}
+			if (variantMode === 'random') {
+				toast.success('Fresh setup ready');
+			}
+		} catch (e) {
+			console.error(e);
+			toast.error(e instanceof Error ? e.message : 'Variant generation failed');
+		} finally {
+			previewing = false;
+		}
+	}
 
 	async function generate() {
 		if (!config) return;
@@ -43,7 +136,7 @@
 			toast.error('Give the project a name');
 			return;
 		}
-		if (!avatarId) {
+		if (!avatarId || !selectedAvatar) {
 			toast.error('Pick an avatar');
 			return;
 		}
@@ -55,15 +148,41 @@
 			toast.error('Script is too short — give the agent something to work with');
 			return;
 		}
+		if (variantMode !== 'default' && !variantPreview) {
+			toast.error('Preview the setup before continuing');
+			return;
+		}
 
 		generating = true;
 		try {
+			const variant =
+				variantMode === 'default'
+					? {
+							environmentDescription: selectedAvatar.environmentDescription,
+							referenceImageBase64: selectedAvatar.referenceImageBase64
+						}
+					: {
+							environmentDescription: variantPreview!.environmentDescription,
+							referenceImageBase64: variantPreview!.referenceImageBase64
+						};
+
 			const project = await projectStore.create({
 				name: name.trim(),
 				avatarId,
 				script: script.trim(),
-				lipsyncProvider
+				lipsyncProvider,
+				avatarVariantMode: variantMode,
+				avatarVariantDescription: variant.environmentDescription,
+				avatarVariantReferenceImage: variant.referenceImageBase64
 			});
+
+			const nextRecent = [
+				variant.environmentDescription,
+				...(selectedAvatar.recentEnvironments ?? []).filter(
+					(e) => e !== variant.environmentDescription
+				)
+			].slice(0, 5);
+			await avatarStore.patch(selectedAvatar.id, { recentEnvironments: nextRecent });
 			const result = await generateStoryboard(config, script);
 			await projectStore.setScenes(project.id, result.scenes);
 			const tokens = result.usage.inputTokens + result.usage.outputTokens;
@@ -119,6 +238,116 @@
 						class="h-9"
 					/>
 				</div>
+
+				{#if selectedAvatar}
+					<div class="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+						<div class="flex items-center justify-between">
+							<Label class="text-[11px] font-medium text-muted-foreground">
+								Setup for this project
+							</Label>
+							<span class="text-[11px] tabular-nums text-muted-foreground">
+								Preview · {fmtUsd(variantPreviewCost)}
+							</span>
+						</div>
+
+						<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+							{#each variantOptions as option (option.id)}
+								<button
+									type="button"
+									onclick={() => (variantMode = option.id)}
+									class={cn(
+										'flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
+										variantMode === option.id
+											? 'border-foreground bg-background/60'
+											: 'border-border bg-background/30 hover:border-border-strong'
+									)}
+								>
+									<span class="text-[12px] font-medium">{option.label}</span>
+									<span class="text-[11px] leading-relaxed text-muted-foreground">
+										{option.hint}
+									</span>
+								</button>
+							{/each}
+						</div>
+
+						{#if variantMode === 'custom'}
+							<Textarea
+								value={customVariantText}
+								oninput={(e) =>
+									(customVariantText = (e.target as HTMLTextAreaElement).value)}
+								placeholder="kitchen, white tank top, golden hour lighting, coffee mug on counter"
+								rows={2}
+								class="text-[12px]"
+							/>
+						{/if}
+
+						<div class="flex flex-wrap items-center gap-2">
+							{#if variantMode === 'default'}
+								<p class="text-[11px] text-muted-foreground">
+									No extra generation cost — uses the avatar's locked reference.
+								</p>
+							{:else}
+								<Button
+									variant="ghost"
+									size="sm"
+									class="h-8 text-[11px]"
+									onclick={previewVariant}
+									disabled={previewing ||
+										(variantMode === 'custom' && !customVariantText.trim())}
+								>
+									{#if previewing}
+										<HIcon name="loading-03" class="h-3 w-3 animate-spin" />
+										Generating
+									{:else}
+										<HIcon
+											name={variantMode === 'random' ? 'sparkles' : 'magic-wand-01'}
+											class="h-3 w-3"
+										/>
+										{variantMode === 'random'
+											? variantPreview
+												? 'Surprise me again'
+												: 'Surprise me'
+											: variantPreview
+												? 'Re-generate preview'
+												: 'Generate preview'}
+									{/if}
+								</Button>
+							{/if}
+						</div>
+
+						<div class="flex gap-3 rounded-lg border border-dashed border-border bg-background/20 p-3">
+							{#if variantMode === 'default'}
+								<img
+									src={selectedAvatar.referenceImageBase64}
+									alt="Default reference"
+									class="h-32 w-auto rounded-md object-cover ring-1 ring-border"
+								/>
+								<div class="flex flex-col justify-center text-[11px] leading-relaxed text-muted-foreground">
+									<p class="font-medium text-foreground/80">Default setup</p>
+									<p>{selectedAvatar.environmentDescription}</p>
+								</div>
+							{:else if variantPreview}
+								<img
+									src={variantPreview.referenceImageBase64}
+									alt="Variant preview"
+									class="h-32 w-auto rounded-md object-cover ring-1 ring-border"
+								/>
+								<div class="flex flex-col justify-center text-[11px] leading-relaxed text-muted-foreground">
+									<p class="font-medium uppercase tracking-[0.14em] text-foreground/80">
+										{variantPreview.mode}
+									</p>
+									<p>{variantPreview.environmentDescription}</p>
+								</div>
+							{:else}
+								<div class="flex h-32 flex-1 items-center justify-center text-[11px] text-muted-foreground">
+									{variantMode === 'custom'
+										? 'Describe the setup, then preview to lock it in.'
+										: 'Click "Surprise me" to generate a fresh setup.'}
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
 
 				<div class="flex flex-col gap-1.5">
 					<div class="flex items-center justify-between">

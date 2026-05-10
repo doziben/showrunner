@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 import { nanoid } from 'nanoid';
 import { db } from '$lib/db';
 import { toPlain } from '$lib/helpers/clone';
-import type { LipsyncProvider, Project, Scene } from '$lib/types';
+import type { AvatarVariantMode, LipsyncProvider, Project, Scene } from '$lib/types';
 import { DEFAULT_LIPSYNC_PROVIDER } from '$lib/pipeline/lipsync-models';
 
 type ProjectState = {
@@ -25,6 +25,9 @@ function createProjectStore() {
 		avatarId: string;
 		script: string;
 		lipsyncProvider?: LipsyncProvider;
+		avatarVariantMode: AvatarVariantMode;
+		avatarVariantDescription: string;
+		avatarVariantReferenceImage: string;
 	}) {
 		const now = Date.now();
 		const next: Project = toPlain({
@@ -35,6 +38,9 @@ function createProjectStore() {
 			scenes: [],
 			status: 'draft',
 			lipsyncProvider: input.lipsyncProvider ?? DEFAULT_LIPSYNC_PROVIDER,
+			avatarVariantMode: input.avatarVariantMode,
+			avatarVariantDescription: input.avatarVariantDescription,
+			avatarVariantReferenceImage: input.avatarVariantReferenceImage,
 			createdAt: now,
 			updatedAt: now
 		});

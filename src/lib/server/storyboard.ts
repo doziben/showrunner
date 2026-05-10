@@ -11,7 +11,17 @@ const sceneSchema = z.object({
 	audioLine: z.string().min(1),
 	durationSeconds: z.number().int().positive().max(30),
 	actionDescription: z.string().optional(),
-	framing: z.enum(['medium', 'close-up', 'wide']).optional(),
+	framing: z
+		.enum([
+			'medium_direct',
+			'close-up_direct',
+			'medium_off-axis',
+			'low_angle',
+			'high_angle',
+			'leaning_forward',
+			'leaning_back'
+		])
+		.optional(),
 	shotDescription: z.string().optional(),
 	recordingInstructions: z.string().optional()
 });

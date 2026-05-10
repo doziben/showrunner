@@ -1,4 +1,5 @@
-import type { Avatar } from '$lib/types';
+import type { Avatar, AvatarVariantMode, Config } from '$lib/types';
+import { buildVariantPrompt } from './prompts';
 
 /**
  * Avatar image generation — runs server-side via /api/avatars/portraits and
@@ -38,13 +39,19 @@ export async function generateAvatarPortraits({
 	return images.map((base64) => ({ base64, seed: 0 }));
 }
 
+/**
+ * Generate a single scene shot using a specific reference image. The caller
+ * passes the project's avatarVariantReferenceImage so every scene in a project
+ * shares the same outfit/environment, even if the avatar's original reference
+ * is different.
+ */
 export async function generateSceneShot({
-	avatar,
 	prompt,
+	referenceImageBase64,
 	apiKey
 }: {
-	avatar: Avatar;
 	prompt: string;
+	referenceImageBase64: string;
 	apiKey: string;
 }): Promise<string> {
 	const res = await fetch('/api/avatars/scene-shot', {
@@ -55,7 +62,7 @@ export async function generateSceneShot({
 		},
 		body: JSON.stringify({
 			prompt,
-			referenceImageBase64: avatar.referenceImageBase64
+			referenceImageBase64
 		})
 	});
 	if (!res.ok) {
@@ -64,4 +71,89 @@ export async function generateSceneShot({
 	}
 	const { image } = (await res.json()) as { image: string };
 	return image;
+}
+
+/**
+ * Ask Claude to invent a fresh outfit/environment that doesn't repeat the
+ * avatar's recent setups. Server-side route handles the API key.
+ */
+export async function generateRandomEnvironment(
+	avatar: Avatar,
+	config: Config
+): Promise<string> {
+	const headers: Record<string, string> = { 'content-type': 'application/json' };
+	if (config.useAiGateway && config.aiGatewayKey) {
+		headers['x-showrunner-gateway'] = config.aiGatewayKey;
+	} else if (!config.useAiGateway && config.anthropicKey) {
+		headers['x-showrunner-anthropic'] = config.anthropicKey;
+	}
+
+	const res = await fetch('/api/avatars/random-environment', {
+		method: 'POST',
+		headers,
+		body: JSON.stringify({
+			recentEnvironments: (avatar.recentEnvironments ?? []).slice(0, 5),
+			useGateway: config.useAiGateway
+		})
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new Error(`Random environment ${res.status}: ${text.slice(0, 240)}`);
+	}
+	const { description } = (await res.json()) as { description: string };
+	return description;
+}
+
+export type AvatarVariantResult = {
+	mode: AvatarVariantMode;
+	environmentDescription: string;
+	referenceImageBase64: string;
+};
+
+/**
+ * Generate the project-specific avatar setup.
+ *
+ * - default: pass through the avatar's locked reference (no extra cost)
+ * - custom: caller-supplied description, fresh image-to-image render
+ * - random: Claude picks a fresh description, fresh image-to-image render
+ *
+ * The fresh render uses the avatar's reference as the identity anchor via
+ * input_images; gpt-image-2 preserves the face and re-skins outfit + room.
+ */
+export async function generateAvatarVariant({
+	avatar,
+	mode,
+	customDescription,
+	config
+}: {
+	avatar: Avatar;
+	mode: AvatarVariantMode;
+	customDescription?: string;
+	config: Config;
+}): Promise<AvatarVariantResult> {
+	if (mode === 'default') {
+		return {
+			mode,
+			environmentDescription: avatar.environmentDescription,
+			referenceImageBase64: avatar.referenceImageBase64
+		};
+	}
+
+	let environmentDescription: string;
+	if (mode === 'custom') {
+		const trimmed = customDescription?.trim();
+		if (!trimmed) throw new Error('Custom variant requires a description');
+		environmentDescription = trimmed;
+	} else {
+		environmentDescription = await generateRandomEnvironment(avatar, config);
+	}
+
+	const prompt = buildVariantPrompt(avatar, environmentDescription);
+	const referenceImageBase64 = await generateSceneShot({
+		prompt,
+		referenceImageBase64: avatar.referenceImageBase64,
+		apiKey: config.replicateKey
+	});
+
+	return { mode, environmentDescription, referenceImageBase64 };
 }

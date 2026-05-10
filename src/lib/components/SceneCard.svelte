@@ -5,8 +5,28 @@
 	import * as Select from '$lib/components/ui/select';
 	import { cn } from '$lib/utils';
 	import { estimateSeconds } from '$lib/helpers/duration';
-	import type { Scene } from '$lib/types';
+	import type { Framing, Scene } from '$lib/types';
 	import HIcon from '$lib/components/HIcon.svelte';
+
+	const FRAMING_LABELS: Record<Framing, string> = {
+		medium_direct: 'Medium · direct',
+		'close-up_direct': 'Close-up · direct',
+		'medium_off-axis': 'Medium · off-axis',
+		low_angle: 'Low angle',
+		high_angle: 'High angle',
+		leaning_forward: 'Leaning forward',
+		leaning_back: 'Leaning back'
+	};
+
+	const FRAMING_TAGS: Record<Framing, string> = {
+		medium_direct: 'medium_direct',
+		'close-up_direct': 'close-up_direct',
+		'medium_off-axis': 'medium_off-axis',
+		low_angle: 'low_angle',
+		high_angle: 'high_angle',
+		leaning_forward: 'leaning_forward',
+		leaning_back: 'leaning_back'
+	};
 
 	interface Props {
 		scene: Scene;
@@ -37,8 +57,9 @@
 	const typeLabel = $derived(scene.type === 'avatar' ? 'AVATAR' : 'B-ROLL');
 
 	const framingLabel = $derived(
-		scene.framing === 'close-up' ? 'Close-up' : scene.framing === 'wide' ? 'Wide' : 'Medium'
+		scene.framing ? FRAMING_LABELS[scene.framing] : FRAMING_LABELS.medium_direct
 	);
+	const framingTag = $derived(scene.framing ? FRAMING_TAGS[scene.framing] : null);
 
 	function recomputeDuration() {
 		onChange({ durationSeconds: estimateSeconds(scene.audioLine) });
@@ -49,7 +70,9 @@
 	<!-- Tiny tracked label above the block (Flora pattern) -->
 	<div class="flex items-center gap-2 px-1">
 		<span class="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-			Scene {String(index + 1).padStart(2, '0')} · {typeLabel}
+			Scene {String(index + 1).padStart(2, '0')} · {typeLabel}{#if scene.type === 'avatar' && framingTag}
+				<span class="ml-1 text-muted-foreground/70"> · {framingTag}</span>
+			{/if}
 		</span>
 		{#if scene.status === 'complete'}
 			<span class="flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-emerald-400/90">
@@ -123,16 +146,20 @@
 				{#if scene.type === 'avatar'}
 					<Select.Root
 						type="single"
-						value={scene.framing ?? 'medium'}
+						value={scene.framing ?? 'medium_direct'}
 						onValueChange={(v) => onChange({ framing: v as Scene['framing'] })}
 					>
 						<Select.Trigger class="h-7 rounded-md border-border bg-background/40 px-2.5 text-[11px]">
 							{framingLabel}
 						</Select.Trigger>
 						<Select.Content>
-							<Select.Item value="medium">Medium</Select.Item>
-							<Select.Item value="close-up">Close-up</Select.Item>
-							<Select.Item value="wide">Wide</Select.Item>
+							<Select.Item value="medium_direct">Medium · direct</Select.Item>
+							<Select.Item value="close-up_direct">Close-up · direct</Select.Item>
+							<Select.Item value="medium_off-axis">Medium · off-axis</Select.Item>
+							<Select.Item value="low_angle">Low angle</Select.Item>
+							<Select.Item value="high_angle">High angle</Select.Item>
+							<Select.Item value="leaning_forward">Leaning forward</Select.Item>
+							<Select.Item value="leaning_back">Leaning back</Select.Item>
 						</Select.Content>
 					</Select.Root>
 				{/if}
