@@ -50,10 +50,10 @@ function createConfigStore() {
 
 	function isComplete(c: Config | null): c is Config {
 		if (!c) return false;
-		const hasModelKey = c.useAiGateway ? !!c.aiGatewayKey : !!c.anthropicKey;
-		return (
-			hasModelKey && !!c.replicateKey && !!c.elevenLabsKey && !!c.falKey && c.voices.length > 0
-		);
+		// Keys can come from server env (.env.local) OR from this config — the
+		// server resolves them on each request. The only piece that has no env
+		// equivalent is the voice library, so that's the minimum bar.
+		return c.voices.length > 0;
 	}
 
 	function findVoice(c: Config | null, voiceId: string): Voice | undefined {
