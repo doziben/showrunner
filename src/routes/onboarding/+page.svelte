@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { configStore } from '$lib/stores/config';
@@ -37,22 +38,61 @@
 
 	let saving = $state(false);
 
+	/**
+	 * Server-side env detection. If the deployer has set REPLICATE_API_TOKEN etc.
+	 * in .env.local, those providers auto-pass the key step — the user doesn't
+	 * need to paste anything for them.
+	 */
+	let envSet = $state({
+		gateway: false,
+		anthropic: false,
+		replicate: false,
+		elevenlabs: false,
+		fal: false
+	});
+
+	onMount(async () => {
+		try {
+			const res = await fetch('/api/health');
+			if (!res.ok) return;
+			const health = (await res.json()) as Record<string, { envSet: boolean }>;
+			envSet = {
+				gateway: !!health.gateway?.envSet,
+				anthropic: !!health.anthropic?.envSet,
+				replicate: !!health.replicate?.envSet,
+				elevenlabs: !!health.elevenlabs?.envSet,
+				fal: !!health.fal?.envSet
+			};
+			// If gateway is server-set but anthropic isn't (or vice versa), default the
+			// toggle to whichever is configured. User can still flip if they want BYOK.
+			if (envSet.gateway && !envSet.anthropic) useAiGateway = true;
+			else if (!envSet.gateway && envSet.anthropic) useAiGateway = false;
+		} catch {
+			// Health check failure shouldn't block onboarding — user can still BYOK.
+		}
+	});
+
 	const stepLabels = ['Welcome', 'Keys', 'Voices', 'Done'];
 
+	const modelEnvSet = $derived(useAiGateway ? envSet.gateway : envSet.anthropic);
+
 	const allKeysVerified = $derived(
-		modelKeyResult?.ok && replicateResult?.ok && elevenLabsResult?.ok && falResult?.ok
+		(modelEnvSet || modelKeyResult?.ok) &&
+			(envSet.replicate || replicateResult?.ok) &&
+			(envSet.elevenlabs || elevenLabsResult?.ok) &&
+			(envSet.fal || falResult?.ok)
 	);
 
 	/**
-	 * Some providers (Vercel AI Gateway, Replicate) block direct browser pings via CORS
-	 * even though they accept the same keys at generation time through the SDK. Don't
-	 * gate progression on the test result — just require all four fields to be filled.
+	 * Continue gate: a provider is satisfied if either (a) the server has it via
+	 * env, or (b) the user pasted a key. Test results aren't required.
 	 */
 	const allKeysPresent = $derived(
-		(useAiGateway ? aiGatewayKey.trim() : anthropicKey.trim()).length > 0 &&
-			replicateKey.trim().length > 0 &&
-			elevenLabsKey.trim().length > 0 &&
-			falKey.trim().length > 0
+		(modelEnvSet ||
+			(useAiGateway ? aiGatewayKey.trim() : anthropicKey.trim()).length > 0) &&
+			(envSet.replicate || replicateKey.trim().length > 0) &&
+			(envSet.elevenlabs || elevenLabsKey.trim().length > 0) &&
+			(envSet.fal || falKey.trim().length > 0)
 	);
 
 	const validVoices = $derived(
@@ -104,6 +144,22 @@
 		return useAiGateway ? testAiGateway(key) : testAnthropic(key);
 	}
 </script>
+
+{#snippet envSetRow(label: string, varName: string)}
+	<div class="flex flex-col gap-1.5">
+		<div class="flex items-center justify-between">
+			<Label class="text-[12px] font-medium">{label}</Label>
+			<span class="text-[11px] text-muted-foreground">via <code class="rounded bg-muted px-1 font-mono">{varName}</code></span>
+		</div>
+		<div
+			class="flex h-9 items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 text-[12px] text-emerald-300"
+		>
+			<HIcon name="checkmark-circle-01" class="h-3.5 w-3.5" />
+			<span class="font-medium">Set on server</span>
+			<span class="text-emerald-300/70">— no key needed</span>
+		</div>
+	</div>
+{/snippet}
 
 <div class="flex min-h-screen flex-col bg-background bg-dot-grid">
 	<header class="flex h-14 shrink-0 items-center justify-between px-6">
@@ -202,11 +258,16 @@
 						</Button>
 					</div>
 				{:else if step === 1}
+					{@const envCount = Object.values(envSet).filter(Boolean).length}
 					<div class="flex flex-col gap-5">
 						<div class="space-y-1.5">
 							<h2 class="text-xl font-medium">Connect your APIs</h2>
 							<p class="text-[12px] text-muted-foreground">
-								All four required. Test each connection.
+								{#if envCount > 0}
+									{envCount} already set on the server via <code class="rounded bg-muted px-1 font-mono">.env.local</code>. Paste keys for the rest.
+								{:else}
+									All four required. Test each connection.
+								{/if}
 							</p>
 						</div>
 
@@ -234,15 +295,21 @@
 
 						<div class="flex flex-col gap-4">
 							{#if useAiGateway}
-								<ApiKeyInput
-									label="AI Gateway API key"
-									value={aiGatewayKey}
-									placeholder="vck_..."
-									signupUrl="https://vercel.com/docs/ai-gateway"
-									test={modelKeyTester}
-									onChange={(v) => (aiGatewayKey = v)}
-									onResult={(r) => (modelKeyResult = r)}
-								/>
+								{#if envSet.gateway}
+									{@render envSetRow('AI Gateway API key', 'AI_GATEWAY_API_KEY')}
+								{:else}
+									<ApiKeyInput
+										label="AI Gateway API key"
+										value={aiGatewayKey}
+										placeholder="vck_..."
+										signupUrl="https://vercel.com/docs/ai-gateway"
+										test={modelKeyTester}
+										onChange={(v) => (aiGatewayKey = v)}
+										onResult={(r) => (modelKeyResult = r)}
+									/>
+								{/if}
+							{:else if envSet.anthropic}
+								{@render envSetRow('Anthropic API key', 'ANTHROPIC_API_KEY')}
 							{:else}
 								<ApiKeyInput
 									label="Anthropic API key"
@@ -255,36 +322,48 @@
 								/>
 							{/if}
 
-							<ApiKeyInput
-								label="Replicate API token"
-								value={replicateKey}
-								placeholder="r8_..."
-								signupUrl="https://replicate.com/account/api-tokens"
-								test={testReplicate}
-								onChange={(v) => (replicateKey = v)}
-								onResult={(r) => (replicateResult = r)}
-							/>
+							{#if envSet.replicate}
+								{@render envSetRow('Replicate API token', 'REPLICATE_API_TOKEN')}
+							{:else}
+								<ApiKeyInput
+									label="Replicate API token"
+									value={replicateKey}
+									placeholder="r8_..."
+									signupUrl="https://replicate.com/account/api-tokens"
+									test={testReplicate}
+									onChange={(v) => (replicateKey = v)}
+									onResult={(r) => (replicateResult = r)}
+								/>
+							{/if}
 
-							<ApiKeyInput
-								label="ElevenLabs API key"
-								value={elevenLabsKey}
-								placeholder="sk_..."
-								signupUrl="https://elevenlabs.io/app/settings/api-keys"
-								test={testElevenLabs}
-								onChange={(v) => (elevenLabsKey = v)}
-								onResult={(r) => (elevenLabsResult = r)}
-							/>
+							{#if envSet.elevenlabs}
+								{@render envSetRow('ElevenLabs API key', 'ELEVEN_LABS_API_KEY')}
+							{:else}
+								<ApiKeyInput
+									label="ElevenLabs API key"
+									value={elevenLabsKey}
+									placeholder="sk_..."
+									signupUrl="https://elevenlabs.io/app/settings/api-keys"
+									test={testElevenLabs}
+									onChange={(v) => (elevenLabsKey = v)}
+									onResult={(r) => (elevenLabsResult = r)}
+								/>
+							{/if}
 
-							<ApiKeyInput
-								label="fal.ai API key"
-								value={falKey}
-								placeholder="<uuid>:<secret>"
-								hint="Shape-checked now, fully verified on first run."
-								signupUrl="https://fal.ai/dashboard/keys"
-								test={testFal}
-								onChange={(v) => (falKey = v)}
-								onResult={(r) => (falResult = r)}
-							/>
+							{#if envSet.fal}
+								{@render envSetRow('fal.ai API key', 'FAL_API_KEY')}
+							{:else}
+								<ApiKeyInput
+									label="fal.ai API key"
+									value={falKey}
+									placeholder="<uuid>:<secret>"
+									hint="Shape-checked now, fully verified on first run."
+									signupUrl="https://fal.ai/dashboard/keys"
+									test={testFal}
+									onChange={(v) => (falKey = v)}
+									onResult={(r) => (falResult = r)}
+								/>
+							{/if}
 						</div>
 
 						{#if allKeysPresent && !allKeysVerified}
