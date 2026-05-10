@@ -176,41 +176,84 @@
 				</div>
 			</div>
 
-			<!-- Audio line (the lead content) -->
-			<Textarea
-				value={scene.audioLine}
-				oninput={(e) => onChange({ audioLine: (e.target as HTMLTextAreaElement).value })}
-				rows={2}
-				class="border-0 bg-transparent p-0 text-[15px] leading-snug shadow-none focus-visible:ring-0"
-				placeholder="What is spoken in this scene…"
-			/>
+			<!-- SPOKEN — the actual line that gets voiced. Visually primary. -->
+			<div class="flex items-start gap-3">
+				<span
+					class="mt-[7px] shrink-0 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/70"
+					>Spoken</span
+				>
+				<Textarea
+					value={scene.audioLine}
+					oninput={(e) => onChange({ audioLine: (e.target as HTMLTextAreaElement).value })}
+					rows={2}
+					class="flex-1 border-0 bg-transparent p-0 text-[15px] leading-snug text-foreground shadow-none focus-visible:ring-0"
+					placeholder="What is spoken in this scene…"
+				/>
+			</div>
 
-			<!-- Type-specific fields -->
-			{#if scene.type === 'avatar'}
-				<Textarea
-					value={scene.actionDescription ?? ''}
-					oninput={(e) => onChange({ actionDescription: (e.target as HTMLTextAreaElement).value })}
-					rows={2}
-					placeholder="Action — leaning forward, knowing smirk forming, hand entering frame…"
-					class="text-[12px] text-muted-foreground"
-				/>
-			{:else}
-				<Textarea
-					value={scene.shotDescription ?? ''}
-					oninput={(e) => onChange({ shotDescription: (e.target as HTMLTextAreaElement).value })}
-					rows={2}
-					placeholder="Shot — what the viewer sees on screen…"
-					class="text-[12px] text-muted-foreground"
-				/>
-				<Textarea
-					value={scene.recordingInstructions ?? ''}
-					oninput={(e) =>
-						onChange({ recordingInstructions: (e.target as HTMLTextAreaElement).value })}
-					rows={3}
-					placeholder="Recording — open ChatGPT, type X, capture as 9:16…"
-					class="text-[12px] text-muted-foreground"
-				/>
-			{/if}
+			<!-- Section divider with DIRECTION label -->
+			<div class="flex items-center gap-3 pt-0.5">
+				<div class="h-px flex-1 bg-border/50"></div>
+				<span
+					class="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/60"
+				>
+					Direction
+				</span>
+				<div class="h-px flex-1 bg-border/50"></div>
+			</div>
+
+			<!-- Direction panel — recessed background + labeled subfields. -->
+			<div class="flex flex-col gap-3 rounded-lg bg-background/40 p-3">
+				{#if scene.type === 'avatar'}
+					<div class="flex flex-col gap-1.5">
+						<span
+							class="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70"
+						>
+							Action
+						</span>
+						<Textarea
+							value={scene.actionDescription ?? ''}
+							oninput={(e) =>
+								onChange({ actionDescription: (e.target as HTMLTextAreaElement).value })}
+							rows={2}
+							placeholder="Leaning forward, knowing smirk forming, hand entering frame…"
+							class="border-0 bg-transparent p-0 text-[12px] leading-relaxed text-muted-foreground shadow-none focus-visible:ring-0"
+						/>
+					</div>
+				{:else}
+					<div class="flex flex-col gap-1.5">
+						<span
+							class="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70"
+						>
+							Shot
+						</span>
+						<Textarea
+							value={scene.shotDescription ?? ''}
+							oninput={(e) =>
+								onChange({ shotDescription: (e.target as HTMLTextAreaElement).value })}
+							rows={2}
+							placeholder="What the viewer sees on screen…"
+							class="border-0 bg-transparent p-0 text-[12px] leading-relaxed text-muted-foreground shadow-none focus-visible:ring-0"
+						/>
+					</div>
+					<div class="h-px bg-border/40"></div>
+					<div class="flex flex-col gap-1.5">
+						<span
+							class="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70"
+						>
+							Recording
+						</span>
+						<Textarea
+							value={scene.recordingInstructions ?? ''}
+							oninput={(e) =>
+								onChange({ recordingInstructions: (e.target as HTMLTextAreaElement).value })}
+							rows={3}
+							placeholder="Open ChatGPT, type X, capture as 9:16…"
+							class="border-0 bg-transparent p-0 text-[12px] leading-relaxed text-muted-foreground shadow-none focus-visible:ring-0"
+						/>
+					</div>
+				{/if}
+			</div>
 
 			{#if scene.status === 'failed' && scene.errorMessage}
 				<p class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
