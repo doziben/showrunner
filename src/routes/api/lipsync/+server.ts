@@ -55,11 +55,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		]);
 
 		const endpointId = body.provider === 'fabric' ? 'veed/fabric-1.0' : 'fal-ai/creatify/aurora';
-		const resolution = body.provider === 'fabric' ? '480p' : '720p';
 
 		const data = await runFalSubscribe<{ video?: { url?: string } }>({
 			endpointId,
-			input: { image_url, audio_url, resolution },
+			input: { image_url, audio_url, resolution: '720p' },
 			apiKey: falKey
 		});
 

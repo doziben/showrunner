@@ -25,22 +25,22 @@ export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
 		tagline: 'Cheapest. Optimized variant, 720p.',
 		maxDurationSec: 10
 	},
-	fabric: {
-		id: 'fabric',
-		label: 'Veed Fabric 1.0',
-		provider: 'fal',
-		defaultResolution: '480p',
-		pricePerSecond: 0.08,
-		tagline: 'Reliable middle. 480p, broad codec support.',
-		maxDurationSec: 60
-	},
 	aurora: {
 		id: 'aurora',
 		label: 'Creatify Aurora',
 		provider: 'fal',
 		defaultResolution: '720p',
 		pricePerSecond: 0.14,
-		tagline: 'Highest quality. 720p, polished output.',
+		tagline: 'Reliable middle. 720p, polished output.',
+		maxDurationSec: 60
+	},
+	fabric: {
+		id: 'fabric',
+		label: 'Veed Fabric 1.0',
+		provider: 'fal',
+		defaultResolution: '720p',
+		pricePerSecond: 0.15,
+		tagline: 'Highest quality. 720p, broad codec support.',
 		maxDurationSec: 60
 	}
 };
