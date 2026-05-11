@@ -61,6 +61,8 @@ function readme(project: Project, avatar: Avatar | undefined): string {
 		`**Total scenes:** ${project.scenes.length}`,
 		`**Estimated runtime:** ${formatDuration(totalSeconds)}`,
 		'',
+		'**Source script:** `script.txt` (full original script as entered in Showrunner)',
+		'',
 		'## Storyboard',
 		''
 	];
@@ -132,6 +134,7 @@ export async function exportProjectBundle(
 		}
 	}
 
+	zip.file('script.txt', project.script ?? '');
 	zip.file('README.md', readme(project, avatar));
 
 	const blob = await zip.generateAsync({ type: 'blob' });
