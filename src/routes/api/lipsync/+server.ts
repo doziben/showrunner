@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					prompt: body.prompt ?? 'speaking to camera, natural expression',
 					image: body.imageDataUrl,
 					audio: body.audioDataUrl,
-					resolution: '720p',
+					resolution: '1080p',
 					aspect_ratio: '9:16',
 					duration,
 					draft_mode: false
