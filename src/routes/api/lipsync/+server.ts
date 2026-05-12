@@ -26,17 +26,13 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (body.provider === 'p-video') {
 			const apiKey = resolveKey('replicate', request);
 			if (!apiKey) return json({ error: 'No Replicate key' }, { status: 401 });
-			const duration = Math.min(10, Math.max(1, body.durationSeconds ?? 5));
 			const output = await runReplicate({
-				model: 'prunaai/p-video',
+				model: 'prunaai/p-video-avatar',
 				input: {
-					prompt: body.prompt ?? 'speaking to camera, natural expression',
 					image: body.imageDataUrl,
 					audio: body.audioDataUrl,
 					resolution: '1080p',
-					aspect_ratio: '9:16',
-					duration,
-					draft_mode: false
+					video_prompt: body.prompt ?? 'The person is talking.'
 				},
 				apiKey
 			});

@@ -18,11 +18,11 @@ export interface LipsyncModelInfo {
 export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
 	'p-video': {
 		id: 'p-video',
-		label: 'PrunaAI P-Video',
+		label: 'PrunaAI P-Video Avatar',
 		provider: 'replicate',
 		defaultResolution: '1080p',
-		pricePerSecond: 0.04,
-		tagline: 'Cheapest. Optimized variant, 1080p.',
+		pricePerSecond: 0.045,
+		tagline: 'Cheapest tier. Fast avatar lipsync, 1080p.',
 		maxDurationSec: 10
 	},
 	aurora: {
@@ -31,7 +31,7 @@ export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
 		provider: 'fal',
 		defaultResolution: '720p',
 		pricePerSecond: 0.14,
-		tagline: 'Reliable middle. 720p, polished output.',
+		tagline: 'Mid tier. Polished 720p output.',
 		maxDurationSec: 60
 	},
 	fabric: {
@@ -40,7 +40,7 @@ export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
 		provider: 'fal',
 		defaultResolution: '720p',
 		pricePerSecond: 0.15,
-		tagline: 'Highest quality. 720p, broad codec support.',
+		tagline: 'High tier. 720p, broad codec support.',
 		maxDurationSec: 60
 	},
 	'omni-human-1.5': {
@@ -49,7 +49,7 @@ export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
 		provider: 'replicate',
 		defaultResolution: 'auto',
 		pricePerSecond: 0.16,
-		tagline: 'Film-grade. Cinematic motion, expressive emotion.',
+		tagline: 'Top tier. Film-grade motion + emotion.',
 		maxDurationSec: 35
 	}
 };
