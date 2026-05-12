@@ -21,7 +21,7 @@ export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
 		label: 'PrunaAI P-Video',
 		provider: 'replicate',
 		defaultResolution: '1080p',
-		pricePerSecond: 0.02,
+		pricePerSecond: 0.04,
 		tagline: 'Cheapest. Optimized variant, 1080p.',
 		maxDurationSec: 10
 	},
