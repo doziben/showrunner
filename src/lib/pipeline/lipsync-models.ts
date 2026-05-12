@@ -42,6 +42,15 @@ export const LIPSYNC_MODELS: Record<LipsyncProvider, LipsyncModelInfo> = {
 		pricePerSecond: 0.15,
 		tagline: 'Highest quality. 720p, broad codec support.',
 		maxDurationSec: 60
+	},
+	'omni-human-1.5': {
+		id: 'omni-human-1.5',
+		label: 'ByteDance OmniHuman 1.5',
+		provider: 'replicate',
+		defaultResolution: 'auto',
+		pricePerSecond: 0.16,
+		tagline: 'Film-grade. Cinematic motion, expressive emotion.',
+		maxDurationSec: 35
 	}
 };
 

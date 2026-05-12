@@ -100,7 +100,7 @@ export interface Transaction {
 	notes?: string;
 }
 
-export type LipsyncProvider = 'p-video' | 'fabric' | 'aurora';
+export type LipsyncProvider = 'p-video' | 'fabric' | 'aurora' | 'omni-human-1.5';
 
 /**
  * The shape we send into recordTransaction — id + timestamp filled in by the recorder.

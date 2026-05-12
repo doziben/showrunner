@@ -3,7 +3,7 @@ import type { Avatar, Config, LipsyncProvider, Scene } from '$lib/types';
 /**
  * Lipsync — runs server-side via /api/lipsync. The endpoint dispatches based
  * on `provider`:
- *   - p-video → Replicate (uses x-showrunner-replicate)
+ *   - p-video / omni-human-1.5 → Replicate (uses x-showrunner-replicate)
  *   - fabric / aurora → fal.ai (uses x-showrunner-fal)
  */
 

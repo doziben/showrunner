@@ -172,7 +172,7 @@ async function runScene(projectId: string, sceneId: string, ctx: RunContext): Pr
 	}
 	await patchScene(projectId, sceneId, { avatarImageBase64 });
 
-	// 3. Lipsync. Provider chosen at the project level (p-video / fabric / aurora).
+	// 3. Lipsync. Provider chosen at the project level (p-video / fabric / aurora / omni-human-1.5).
 	await patchScene(projectId, sceneId, { status: 'generating-lipsync' });
 	const lipJob = trackJob(projectId, sceneId, 'lipsync');
 	try {

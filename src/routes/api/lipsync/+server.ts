@@ -18,7 +18,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!body.imageDataUrl || !body.audioDataUrl) {
 		return json({ error: 'Missing imageDataUrl or audioDataUrl' }, { status: 400 });
 	}
-	if (!['p-video', 'fabric', 'aurora'].includes(body.provider)) {
+	if (!['p-video', 'fabric', 'aurora', 'omni-human-1.5'].includes(body.provider)) {
 		return json({ error: `Unknown lipsync provider: ${body.provider}` }, { status: 400 });
 	}
 
@@ -37,6 +37,24 @@ export const POST: RequestHandler = async ({ request }) => {
 					aspect_ratio: '9:16',
 					duration,
 					draft_mode: false
+				},
+				apiKey
+			});
+			const url = extractFirstUrl(output);
+			const video = await urlToDataUrl(url);
+			return json({ video });
+		}
+
+		if (body.provider === 'omni-human-1.5') {
+			const apiKey = resolveKey('replicate', request);
+			if (!apiKey) return json({ error: 'No Replicate key' }, { status: 401 });
+			const output = await runReplicate({
+				model: 'bytedance/omni-human-1.5',
+				input: {
+					image: body.imageDataUrl,
+					audio: body.audioDataUrl,
+					prompt: body.prompt ?? 'speaking to camera, natural expression',
+					fast_mode: false
 				},
 				apiKey
 			});

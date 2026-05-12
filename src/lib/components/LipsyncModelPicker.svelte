@@ -13,7 +13,7 @@
 
 	let { value, avatarSeconds = 0, onChange }: Props = $props();
 
-	const order: LipsyncProvider[] = ['p-video', 'aurora', 'fabric'];
+	const order: LipsyncProvider[] = ['p-video', 'aurora', 'fabric', 'omni-human-1.5'];
 </script>
 
 <div class="flex flex-col gap-1.5">
